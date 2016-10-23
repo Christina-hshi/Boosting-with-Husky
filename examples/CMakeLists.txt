@@ -79,6 +79,6 @@ set_property(TARGET PR_CC PROPERTY CXX_STANDARD 14)
 
 # TESTC
 add_executable(TESTC testcompiling.cpp)
-target_link_libraries(PR_CC ${husky})
-target_link_libraries(PR_CC ${EXTERNAL_LIB})
-set_property(TARGET PR_CC PROPERTY CXX_STANDARD 14)
+target_link_libraries(TESTC ${husky})
+target_link_libraries(TESTC ${EXTERNAL_LIB})
+set_property(TARGET TESTC PROPERTY CXX_STANDARD 14)
