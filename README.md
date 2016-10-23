@@ -1,2 +1,2 @@
 # Large-Scale-Boosting
-Least Significant Byte
+Please change the name to Boosting with Husky 
