@@ -14,6 +14,7 @@
 
 
 #include "mllib/testcompile.hpp"
+#include "core/engine.hpp"
 
 
  PIObject::PIObject(KeyT key){
