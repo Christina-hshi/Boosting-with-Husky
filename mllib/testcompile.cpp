@@ -49,11 +49,3 @@ void pi() {
         husky::base::log_msg(std::to_string(4.0 * sum / total_pts));
     });
 }
-
-int main(int argc, char** argv) {
-    if (husky::init_with_args(argc, argv)) {
-        husky::run_job(pi);
-        return 0;
-    }
-    return 1;
-}
