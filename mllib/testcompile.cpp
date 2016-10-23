@@ -12,21 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <random>
-#include <string>
-#include <vector>
 
-#include "core/engine.hpp"
+#include "mllib/testcompile.hpp"
 
-class PIObject {
-   public:
-    typedef int KeyT;
-    int key;
 
-    explicit PIObject(KeyT key) { this->key = key; }
+ PIObject::PIObject(KeyT key){
+   this->key = key;
+ }
 
-    const int& id() const { return key; }
-};
+const int& id() const { return key; }
 
 void pi() {
     // Each thread generates 1000 points

@@ -1,11 +1,11 @@
 # Copyright 2016 Husky Team
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 # http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -25,7 +25,7 @@ if(MONGOCLIENT_FOUND)
     add_definitions(-DWITH_MONGODB)
 endif(MONGOCLIENT_FOUND)
 
-set(husky husky-lib husky-io husky-core husky-base) 
+set(husky husky-lib husky-io husky-core husky-base husky-mllib)
 
 ### Applications
 
@@ -73,6 +73,12 @@ set_property(TARGET Aggregator PROPERTY CXX_STANDARD 14)
 
 # PR_CC
 add_executable(PR_CC pr_cc_attrlist.cpp)
+target_link_libraries(PR_CC ${husky})
+target_link_libraries(PR_CC ${EXTERNAL_LIB})
+set_property(TARGET PR_CC PROPERTY CXX_STANDARD 14)
+
+# TESTC
+add_executable(TESTC testcompiling.cpp)
 target_link_libraries(PR_CC ${husky})
 target_link_libraries(PR_CC ${EXTERNAL_LIB})
 set_property(TARGET PR_CC PROPERTY CXX_STANDARD 14)
