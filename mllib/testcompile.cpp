@@ -20,7 +20,7 @@
    this->key = key;
  }
 
-const int& id() const { return key; }
+const int& PIObject::id() const { return key; }
 
 void pi() {
     // Each thread generates 1000 points
