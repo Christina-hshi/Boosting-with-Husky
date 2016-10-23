@@ -1,0 +1,50 @@
+sudo: required
+
+dist: trusty
+
+language: cpp
+
+addons:
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test
+      - llvm-toolchain-precise
+    packages:
+      - build-essential
+      - cmake
+      - gcc-4.9
+      - g++-4.9
+      - clang-format-3.8
+
+before_install:
+  - sudo add-apt-repository -y ppa:kojoley/boost
+  - sudo apt-get -q update
+  - sudo apt-get install -qq software-properties-common
+  - sudo apt-get install -qq build-essential libgoogle-perftools-dev libzmq3-dev mercurial git
+  - sudo apt-get -y install libboost-{chrono,program-options,date-time,thread,system,filesystem,regex,serialization}1.58{-dev,.0}
+
+install:
+  - mkdir tmp
+  - cd tmp
+  - git clone https://github.com/zeromq/cppzmq
+  - cd cppzmq
+  - sudo cp zmq.hpp /usr/local/include
+  - cd ../..
+  - rm -rf tmp
+
+before_script:
+  - export HUSKY_ROOT=.
+  - export CLANG_FORMAT=clang-format-3.8
+  - ./scripts/lint.py
+  - ./scripts/clang-format.py -o check
+
+script:
+  - export CXX=g++-4.9
+  - export CC=gcc-4.9
+  - mkdir release
+  - cd release
+  - cmake -DCMAKE_BUILD_TYPE=release ..
+  - make -j4 Master
+  - make -j4 PI
+  - make -j4 HuskyUnitTest
+  - ./HuskyUnitTest
