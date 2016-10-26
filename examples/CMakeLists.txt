@@ -25,7 +25,7 @@ if(MONGOCLIENT_FOUND)
     add_definitions(-DWITH_MONGODB)
 endif(MONGOCLIENT_FOUND)
 
-set(husky husky-lib husky-io husky-core husky-base husky-mllib)
+set(husky husky-mllib husky-lib husky-io husky-core husky-base)
 
 ### Applications
 

@@ -14,7 +14,7 @@
 
 
 #include "mllib/testcompile.hpp"
-#include "core/engine.hpp"
+
 
 
  PIObject::PIObject(KeyT key){
@@ -29,14 +29,8 @@ void pi() {
     std::random_device rd;
     std::mt19937 generator(rd());
     std::uniform_real_distribution<double> distribution(-1.0, 1.0);
-    int cnt = 0;
-    for (int i = 0; i < num_pts_per_thread; i++) {
-        double x = distribution(generator);
-        double y = distribution(generator);
-        if (x * x + y * y <= 1) {
-            cnt += 1;
-        }
-    }
+    int cnt = 1;
+
 
     // Aggregate statistics to object 0
     husky::ObjList<PIObject> pi_list;
@@ -46,7 +40,7 @@ void pi() {
     ch.flush();
     list_execute(pi_list, [&](PIObject& obj) {
         int sum = ch.get(obj);
-        int total_pts = num_pts_per_thread * husky::Context::get_worker_info()->get_num_workers();
-        husky::base::log_msg(std::to_string(4.0 * sum / total_pts));
+
+        husky::base::log_msg(std::to_string(sum));
     });
 }
