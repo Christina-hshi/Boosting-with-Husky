@@ -53,6 +53,13 @@ target_link_libraries(PI ${husky})
 target_link_libraries(PI ${EXTERNAL_LIB})
 set_property(TARGET PI PROPERTY CXX_STANDARD 14)
 
+# linear_regression
+add_executable(linear_regression linear_regression.cpp)
+target_link_libraries(linear_regression ${husky})
+target_link_libraries(linear_regression ${EXTERNAL_LIB})
+set_property(TARGET linear_regression PROPERTY CXX_STANDARD 14)
+
+
 # CC
 add_executable(CC connected_components.cpp)
 target_link_libraries(CC ${husky})
