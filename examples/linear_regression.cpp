@@ -61,6 +61,13 @@ vec_double& operator*= (vec_double& va, const double& c) {
     return va;
 }
 
+// Vector division
+vec_double& operator/= (vec_double& va, const double& c) {
+    int n = va.size();
+    for (int i=0; i < n; i++) va[i] /= c;
+    return va;
+}
+
 void max_abs_vec(vec_double& va, const vec_double& vb) {
     int n = va.size();
     if (va.size() != vb.size())
@@ -92,6 +99,29 @@ void min_vec(vec_double& va, const vec_double& vb) {
     int n = va.size();
     for (int i=0; i < n; i++) va[i] = std::min(va[i], vb[i]);
 }
+
+// Serialization and deserialization
+husky::BinStream& serialization_vec_double(husky::BinStream& stream, const vec_double& u) {
+	stream << u.size();
+	for (double x : u)
+	{
+		stream << x;
+	}
+	return stream;
+}
+husky::BinStream& deserialization_vec_double(husky::BinStream& stream, vec_double& u) {
+	size_t n;
+	stream >> n;
+	u.clear();
+	double x;
+	while(n--)
+	{
+		stream >> x;
+		u.push_back(x);
+	}
+	return stream;
+}
+
 void linear_regression() {
     //auto & worker = husky::Context::get_worker<husky::BaseWorker>();
     
@@ -108,35 +138,30 @@ void linear_regression() {
     
     //sum_examples.to_reset_each_iter();
     
-    int num_features = 1;
-    int num_worker_examples = 0;
-    auto parse_feature_label = [&](boost::string_ref & chunk) {
-        if (chunk.size() == 0)
-	{
-    	    husky::base::log_msg("empty:");
-	    return;
-	}
+	int num_features = 1;
+	int num_worker_examples = 0;
+	auto parse_feature_label = [&](boost::string_ref & chunk) {
 
-        // seperate the string
-        boost::char_separator<char> sep(" \t");
-        boost::tokenizer<boost::char_separator<char>> tok(chunk, sep);
-        XYNode this_xynode;
-        this_xynode.key = num_worker_examples++;
+		// seperate the string
+		boost::char_separator<char> sep(" \t");
+		boost::tokenizer<boost::char_separator<char>> tok(chunk, sep);
+		XYNode this_xynode;
+		this_xynode.key = num_worker_examples++;
 
-        for (auto& w : tok) {
-            this_xynode.X.push_back(std::stod(w));
-        }
-        this_xynode.y = this_xynode.X.back();
-        this_xynode.X.pop_back();
-        // The intercept term
-        this_xynode.X.push_back(1.0);
+		for (auto& w : tok) {
+			this_xynode.X.push_back(std::stod(w));
+		}
+		this_xynode.y = this_xynode.X.back();
+		this_xynode.X.pop_back();
+		// The intercept term
+		this_xynode.X.push_back(1.0);
 
-        num_features = (this_xynode.X).size();
-        global_num_features.update(num_features);
+		num_features = (this_xynode.X).size();
+		global_num_features.update(num_features);
 
-        xynode_list.add_object(this_xynode);
-        sum_examples.update(1);
-    };
+		xynode_list.add_object(this_xynode);
+		sum_examples.update(1);
+	};
 
     auto& ac = husky::lib::AggregatorFactory::get_channel();
     husky::io::HDFSLineInputFormat infmt;
@@ -154,11 +179,15 @@ void linear_regression() {
     
     // parameter vector, Aggreator
     husky::lib::Aggregator<vec_double> param_vec(inti_vec,
-            [](vec_double & va, const vec_double & vb) { va += vb;});
+            [](vec_double & va, const vec_double & vb) { va += vb;},
+			[&](vec_double & v){v = std::move(vec_double(num_features, 0));},
+			deserialization_vec_double,
+			serialization_vec_double);
 
+	/*
     // Aggreate the scaling vector of each machine
     // Even all values abs < 1, they still need to be scaling to avoid the error is too small to calculate.
-    std::cout<<"num_features: "<<num_features<<std::endl;
+    //std::cout<<"num_features: "<<num_features<<std::endl;
     vec_double max_X(num_features, 0);
     //std::cout<<vec_to_str(max_X)<<std::endl;
 
@@ -166,7 +195,13 @@ void linear_regression() {
     double max_y = 0; //std::numeric_limits<double>::min();
     //double min_y = std::numeric_limits<double>::min();
 
-    husky::lib::Aggregator<vec_double> scaling_X(max_X, max_abs_vec);
+    husky::lib::Aggregator<vec_double> scaling_X(max_X, 
+			max_abs_vec,
+			[&](vec_double & v){v = std::move(vec_double(num_features, 0));},
+			deserialization_vec_double,
+			serialization_vec_double);
+
+
     husky::lib::Aggregator<double> scaling_y(max_y,
             [](double & a, const double & b) {
             a = std::max(abs(a), abs(b));});
@@ -175,22 +210,24 @@ void linear_regression() {
     // normalize the value in each instace
     //auto& ch = husky::lib::AggregatorFactory::get_channel();
     husky::list_execute(xynode_list, {}, {&ac}, [&](XYNode& this_xy) {
-    std::cout<<vec_to_str(max_X)<<std::endl;
+		//std::cout<<vec_to_str(max_X)<<std::endl;
+		
+		//std::cout<<"this_xy.X "<<vec_to_str(this_xy.X)<<std::endl;
         max_abs_vec(max_X, this_xy.X);
-	std::cout<<"this_xy.X "<<vec_to_str(this_xy.X)<<std::endl;
-
+		
+		//std::cout<<"after first direct all"<<std::endl;
         max_y = std::max(abs(max_y), abs(this_xy.y));
-        
-    std::cout<<vec_to_str(max_X)<<std::endl;
-	//std::cout<<<<std::endl;
-	scaling_X.update(max_X);
-        //std::cout<<scaling_X.get_value().size()<<std::endl;
-	scaling_y.update(max_y);
+		
+		//std::cout<<vec_to_str(max_X)<<std::endl;
+		scaling_X.update(max_X);
+		//std::cout<<scaling_X.get_value().size()<<std::endl;
+		scaling_y.update(max_y);
 	
         //std::cout<<max_y<<std::endl;
 
     });
 
+	//std::cout<<"after list execute"<<std::endl;
     //std::cout<<scaling_y.get_value()<<std::endl;
     
     // reduce and get the result
@@ -198,7 +235,7 @@ void linear_regression() {
     max_y = scaling_y.get_value();
 
     // complete the scaling for each instance
-    husky::list_execute(xynode_list, [&](XYNode& this_xy) {
+    husky::list_execute(xynode_list, {}, {&ac}, [&](XYNode& this_xy) {
         int n = this_xy.X.size();
         for (int i=0; i < n; i++) {
             if (max_X[i] > 0.0) this_xy.X[i] /= max_X[i];
@@ -206,31 +243,59 @@ void linear_regression() {
         if (max_y > 0.0) this_xy.y /= max_y;
     });
 
+	std::cout<<"after scaling"<<std::endl;
+
+	*/
     double alpha = std::stod(husky::Context::get_param("alpha"));
     int num_iter = std::stoi(husky::Context::get_param("num_iter"));
 
     // Evaluation of the cost, sum of all thread
     husky::lib::Aggregator<double> global_cost(0.0,
-            [](double & a, const double & b) {a += b;});
+            [](double & a, const double & b) {a += b;},
+			[](double& a){a = 0.0;});
     global_cost.to_reset_each_iter();
 
     // Parallel Stochastic Gradient Descent
     auto SGD = [&](){
         // get the parameter vector (reference)
-        vec_double & old_pv = param_vec.get_value();
-        vec_double pv = vec_double(num_features, 0);//param_vec.get_value();
+		husky::lib::AggregatorFactory::sync();
+        
+		//husky::base::log_msg("after sync " + std::to_string(global_cost.get_value()));
 
-        husky::list_execute(xynode_list, [&](XYNode& this_xy) {
-            double error = this_xy.y - (pv * this_xy.X);
-            global_cost.update(error*error);
+		vec_double & old_pv = param_vec.get_value();
+        vec_double pv = vec_double(num_features, 0);//param_vec.get_value();
+		
+		//std::cout<<"before list execute: "<<global_cost.get_value()<<std::endl;
+
+        husky::list_execute(xynode_list, {}, {&ac}, [&](XYNode& this_xy) {
+            double error = this_xy.y - (old_pv * this_xy.X);
+			
+            
+			global_cost.update(error*error);
             for (int i=0; i < num_features; i++) {
                 pv[i] += alpha * error * this_xy.X[i];
             }
+			//std::cout<<"inside list execute: "<<global_cost.get_value()<<std::endl;
         });
-
+	
+		//std::cout<<"pv: "<<vec_to_str(pv)<<std::endl;
+		//std::cout<<"after list execute: "<<global_cost.get_value()<<std::endl;
         //pv -= old_pv;
-        //pv *= static_cast<double>(num_worker_examples) / num_examples;
-        param_vec.update(pv);
+		
+		//husky::base::log_msg("pv before: " + vec_to_str(pv));
+		//husky::base::log_msg(std::to_string(static_cast<double>(num_worker_examples) / num_examples) + " " + std::to_string((num_worker_examples) / num_examples));
+        pv /= num_examples;
+		//husky::base::log_msg("pv after: " + vec_to_str(pv));
+		
+		//std::cout<<"num_worker_examples: "<<num_worker_examples<<" num_example_global: "<<num_examples<<std::endl;
+
+		//husky::base::log_msg("before sync " + std::to_string(global_cost.get_value()));
+		param_vec.update(pv);
+
+		//husky::base::log_msg("after SGD pv: " + vec_to_str(pv));
+		//husky::lib::AggregatorFactory::sync();
+
+		//std::cout<<"param_vec: "<<vec_to_str(old_pv)<<std::endl;
     };
 
     // easy for extend it to execute other GD algo.
@@ -247,18 +312,32 @@ void linear_regression() {
             }
 
             // Empty list_excute to make sure the agg update is effective
-            husky::list_execute(empty_list, [&](XYNode& this_xy){});
+            // husky::list_execute(empty_list, [&](XYNode& this_xy){});
         }
 
+		husky::lib::AggregatorFactory::sync();
         // Show the result
+		
         if (husky::Context::get_global_tid() == 0) {
-            husky::base::log_msg("#example: "+std::to_string(num_examples));
+            /*
+			husky::base::log_msg("#example: "+std::to_string(num_examples));
             husky::base::log_msg("scaling features vector: ");
             husky::base::log_msg(vec_to_str(max_X));
             husky::base::log_msg("scaling of y: ");
             husky::base::log_msg(std::to_string(max_y));
-            vec_double pv = param_vec.get_value();
-            int iter_param = 0;
+            */
+			vec_double pv = param_vec.get_value();
+            husky::base::log_msg("Parameters: " + vec_to_str(pv));
+			/*
+			vec_double unscaled_params(num_features, 0);
+			for (int i = 0; i < num_features; i++)
+			{
+				unscaled_params[i] = pv[i] * max_X[i]; 
+			}
+            husky::base::log_msg("Unscaled parameters: " + vec_to_str(unscaled_params));
+			*/
+			/*
+			int iter_param = 0;
             for (auto& par : pv) {
                 husky::base::log_msg("Param of "
                         + std::to_string(iter_param+1)
@@ -266,11 +345,13 @@ void linear_regression() {
                         + std::to_string(par) );
                 iter_param++;
             }
+			*/
         }
+		
     };
 
     iter_exec(SGD);
-
+	
     //husky::Context::free_worker<husky::BaseWorker>();
 }
 
