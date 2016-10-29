@@ -1,1 +1,10 @@
-
+Instances.hpp
+DataReader.hpp
+CrossValidation.hpp
+BaseEstimator.hpp
+LinearRegression.hpp
+LinearRegression_SGD.hpp
+SimpleLinearRegression.hpp
+LogisticRegression.hpp
+RealAdaBoost.hpp
+LogitBoost.hpp
