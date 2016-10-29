@@ -9,8 +9,8 @@ class Instance{
 public:
     typedef int KeyT;
     KeyT key;
-    XYNode(){}
-    explicit XYNode(const KeyT& k) : key(k) {}
+    Instance(){}
+    explicit Instance(const KeyT& k) : key(k) {}
 
     virtual KeyT const & id() const { return key;}
 
@@ -30,6 +30,14 @@ public:
       // return the existing object so we can chain this operator
       return *this;
     }
+    friend husky::BinStream& operator<<(husky::BinStream& stream, const Instance& u) {
+        stream << u.key << u.X << u.y << u.label << u.last;
+        return stream;
+    }
+    friend husky::BinStream& operator>>(husky::BinStream& stream, Instance& u) {
+        stream >> u.key >> u.X >> u.y >> u.label >> u.last;
+        return stream;
+    }
 };
 
 class Instances{
@@ -43,6 +51,9 @@ public:
   }
   add(const Instance& instance){
     list.add_object(instance);
+  }
+  globalize(){
+    husky::globalize(list);
   }
   auto& enumerator(){
     return list;
@@ -60,6 +71,7 @@ public:
         Instance copy=instance;
         add(copy);
     });
+    husky::globalize(*this);
 
     // return the existing object so we can chain this operator
     return *this;
