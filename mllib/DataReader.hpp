@@ -3,16 +3,17 @@
 #include <mllib/Instances.hpp>
 #include "io/input/hdfs_line_inputformat.hpp"
 #include "boost/tokenizer.hpp"
-#include <ctime>
-
+#include <stdexcept>
 
 namespace husky{
   namespace mllib{
     husky::mllib::Instances tsvReader(std::string filepath){
       husky::mllib::Instances instances;
-      std::mt19937 generator(std::time(0));
-      std::uniform_int_distribution<int> distribution(0, INT_MAX);
-      auto parser = [&generator,&instances,&distribution](boost::string_ref & chunk) {
+      int total_num_workers=husky::Context::get_worker_info()->get_num_workers();
+      int key_giver=((int)INT_MAX/total_num_workers) * husky::Context::get_global_tid();
+
+
+      auto parser = [&instances,&key_giver](boost::string_ref & chunk) {
           if (chunk.size() == 0)
             return;
 
@@ -20,13 +21,19 @@ namespace husky{
           boost::char_separator<char> sep(" \t");
           boost::tokenizer<boost::char_separator<char>> tok(chunk, sep);
           husky::mllib::Instance instance;
-          instance.key = distribution(generator);
+          instance.key = key_giver++;
+          int length=0;
           boost::tokenizer<boost::char_separator<char>>::iterator it = tok.begin();
-          while ((it++) != tok.end()) {
-              it--;
-              instance.X.push_back(stod(*it++));
+          while (it != tok.end()) {
+              length++;
+              it++;
           }
-          it--;
+          it=tok.begin();
+          while (length >1){
+            instance.X.push_back(std::stod(*it++));
+            length--;
+
+          }
           instance.last=*it;
           instances.add(std::move(instance));
 
