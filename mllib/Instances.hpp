@@ -15,7 +15,7 @@ public:
     virtual KeyT const & id() const { return key;}
 
     vec_double X;
-    string last;
+    std::string last;
     Instance& operator=(const Instance& instance){
       if (this == &instance)
           return *this;
@@ -38,18 +38,14 @@ public:
 
 class Instances{
 private:
-  auto & list;
-  auto & ylist;
-  auto & classlist;
+  ObjList<Instance>& list;
+  AttrList<Instance, double>&  ylist;
+  AttrList<Instance, int>& classlist;
 public:
   int numAttributes;
   int numInstances;
   int numClasses;
-  Instances(){
-    list=husky::ObjListFactory::create_objlist<Instance>();
-    ylist=list.create_attrlist<double>("y");
-    classlist=list.create_attrlist<int>("class");
-
+  Instances() : list(husky::ObjListFactory::create_objlist<Instance>()),ylist(list.create_attrlist<double>("y")),classlist(list.create_attrlist<int>("class")){
   }
   void add(const Instance& instance){
     list.add_object(instance);
@@ -60,17 +56,17 @@ public:
   void set_y(const Instance& instance,double y){
     ylist.set(instance,y);
   }
-  double get_y(const Instance& instance){
+  double get_y(const Instance& instance) const{
     return ylist.get(instance);
   }
   void set_class(const Instance& instance,int label){
     classlist.set(instance,label);
   }
-  int get_class(const Instance& instance){
+  int get_class(const Instance& instance) const{
     return classlist.get(instance);
 
   }
-  auto& enumerator(){
+  auto& enumerator() const{
     return list;
   }
   Instances& operator= (const Instances& instances)
@@ -87,10 +83,10 @@ public:
         Instance copy=instance;
         add(copy);
         set_y(copy,instances.get_y(instance));
-        set_class(copy,instances.get_class(instance))
+        set_class(copy,instances.get_class(instance));
 
     });
-    husky::globalize(*this);
+    globalize();
 
     // return the existing object so we can chain this operator
     return *this;

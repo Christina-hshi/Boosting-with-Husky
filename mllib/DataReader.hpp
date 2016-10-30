@@ -1,28 +1,32 @@
 #pragma once
 #include <string>
 #include <mllib/Instances.hpp>
+#include "io/input/hdfs_line_inputformat.hpp"
+#include "boost/tokenizer.hpp"
 #include <ctime>
 
 
 namespace husky{
   namespace mllib{
     husky::mllib::Instances tsvReader(std::string filepath){
-      husky::mllib::Instances instances();
+      husky::mllib::Instances instances;
       std::mt19937 generator(std::time(0));
-      std::uniform_real_distribution<int> distribution(0, INT_MAX);
-      auto parser = [](boost::string_ref & chunk) {
+      std::uniform_int_distribution<int> distribution(0, INT_MAX);
+      auto parser = [&generator,&instances,&distribution](boost::string_ref & chunk) {
           if (chunk.size() == 0)
             return;
 
           // seperate the string
           boost::char_separator<char> sep(" \t");
           boost::tokenizer<boost::char_separator<char>> tok(chunk, sep);
-          husky::mllib:Instance instance;
+          husky::mllib::Instance instance;
           instance.key = distribution(generator);
           boost::tokenizer<boost::char_separator<char>>::iterator it = tok.begin();
-          while ((it+1) != tok.end()) {
+          while ((it++) != tok.end()) {
+              it--;
               instance.X.push_back(stod(*it++));
           }
+          it--;
           instance.last=*it;
           instances.add(std::move(instance));
 
