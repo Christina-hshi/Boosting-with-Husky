@@ -31,6 +31,7 @@ namespace husky{
               length++;
               it++;
           }
+	  // length = std:distance(tok.begin(),tok.end());
           it=tok.begin();
           num_features.update(length-1);
           while (length >1){

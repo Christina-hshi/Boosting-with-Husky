@@ -41,6 +41,7 @@ private:
   ObjList<Instance>& list;
   AttrList<Instance, double>&  ylist;
   AttrList<Instance, int>& classlist;
+//only one list to represent target
 public:
   int numAttributes;
   int numInstances;
