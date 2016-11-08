@@ -52,7 +52,7 @@ namespace husky{
                             double last = instance.X.back();
                             instance.X.pop_back();
 
-                            num_features.update(static_cast<int>(instance.X.size() - 1));
+                            num_features.update(static_cast<int>(instance.X.size()));
                             // set y attributes instances.set
                             instances.set_y(instance, last);
                             });
@@ -63,7 +63,7 @@ namespace husky{
                             instance.X.pop_back();
 
                             num_classes.update(c_label + 1);
-                            num_features.update(static_cast<int>(instance.X.size() - 1));
+                            num_features.update(static_cast<int>(instance.X.size()));
                             //set class attributes
                             instances.set_class(instance, c_label);
                             });
