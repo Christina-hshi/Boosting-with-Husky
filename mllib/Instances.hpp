@@ -59,19 +59,19 @@ public:
   template <typename AttrT>
   void createAttrlist(std::string name){
     if(attr_namelist.find(name) != attr_namelist.end())
-      throw runtime_error("duplicated name of attribute lists");
+      throw std::runtime_error("duplicated name of attribute lists");
     list.create_attrlist<AttrT>(name);
     attr_namelist.insert(name);
   }
   template <typename AttrT>
   auto& getAttrlist(std::string name){
     if(attr_namelist.find(name) == attr_namelist.end())
-      throw runtime_error("attribute list -"+ name+" doesn't exists");
+      throw std::runtime_error("attribute list -"+ name+" doesn't exists");
     return list.get_attrlist<AttrT>(name);
   }
   void deleteAttrlist(std::string name){
     if(attr_namelist.find(name) == attr_namelist.end())
-      throw runtime_error("attribute list -"+ name+" doesn't exists");
+      throw std::runtime_error("attribute list -"+ name+" doesn't exists");
     list.del_attrlist(name);
     attr_namelist.erase(name);
   }

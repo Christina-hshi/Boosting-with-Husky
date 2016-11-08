@@ -2,13 +2,13 @@
 
 namespace husky{
     namespace mllib{
-        bool svReader(Instances& instances,std::string filepath, std::string delimiter = " \t", LABEL_TYPE label_type = LABEL_TYPE::Y){
+        void svReader(Instances& instances,std::string filepath, boost::char_separator<char> delimiter, LABEL_TYPE label_type){
 
-            husky::lib::Aggregator<int> total_num_examples(0, [](int & a, const int & b) { a += b;});
+            husky::lib::Aggregator<unsigned long long> total_num_examples(0, [](unsigned long long & a, const unsigned long long & b) { a += b;});
             husky::lib::Aggregator<int> num_features(0, [](int & a, const int & b) { if(a==0)a = b;else if(a==b) return; else throw std::length_error( "input data: inconsistant dimensionality!" );});
             husky::lib::Aggregator<int> num_classes(0, [](int & a, const int & b) { a= std::max(a,b);});
 
-            string key_prefix = std::to_string(husky::Context::get_global_tid) + "_";
+            std::string key_prefix = std::to_string(husky::Context::get_global_tid()) + "_";
             unsigned long long num_local_instances = 0;
 
             auto& ac = husky::lib::AggregatorFactory::get_channel();
@@ -21,12 +21,12 @@ namespace husky{
                 boost::tokenizer<boost::char_separator<char>> tok(chunk, sep);
                 husky::mllib::Instance instance;
                 instance.key = key_prefix + std::to_string(num_local_instances++);
-                
+
                 for(auto& w : tok)
                 {
-                    instance.X.push_back(std::stod(w));    
+                    instance.X.push_back(std::stod(w));
                 }
-                
+
                 instances.add(std::move(instance));
                 total_num_examples.update(1);
             };
@@ -35,15 +35,16 @@ namespace husky{
             infmt.set_input(filepath);
             husky::base::log_msg("start loading "+filepath);
             husky::load(infmt, {&ac},parser);
-            
+            husky::base::log_msg("finished loading "+filepath);
             instances.globalize();
+            husky::base::log_msg("finished globalizing instances");
             //create corresponding label
-
+            husky::base::log_msg("start constructing y and class column");
             switch(label_type)
             {
                 case LABEL_TYPE::NO_LABEL :
                     list_execute(instances.enumerator(), {}, {&ac}, [&](Instance& instance){
-                            num_features.update(instance.X.size());
+                            num_features.update(static_cast<int>(instance.X.size()));
                             });
                     break;
                 case LABEL_TYPE::Y :
@@ -51,35 +52,34 @@ namespace husky{
                             double last = instance.X.back();
                             instance.X.pop_back();
 
-                            num_features.update(instance.X.size() - 1);
+                            num_features.update(static_cast<int>(instance.X.size() - 1));
                             // set y attributes instances.set
                             instances.set_y(instance, last);
                             });
                     break;
                 case LABEL_TYPE::CLASS :
                     list_execute(instances.enumerator(), {}, {&ac}, [&](Instance& instance){
-                            int c_label = instance.X.back(); //tested from 1-1000000000
+                            int c_label = std::lround(instance.X.back()); //tested from 1-1000000000
                             instance.X.pop_back();
 
                             num_classes.update(c_label + 1);
-                            num_features.update(instance.X.size() - 1);
+                            num_features.update(static_cast<int>(instance.X.size() - 1));
                             //set class attributes
-                            instances.set_class(instances, c_label);
+                            instances.set_class(instance, c_label);
                             });
                     break;
 
                 default :
-                    throw std::invalid_argument("label_type " + std::to_string(label_type) +  " dosen't exit!");
-            }                
-
+                    throw std::invalid_argument("label_type " + std::to_string((int)label_type) +  " dosen't exit!");
+            }
+            husky::base::log_msg("finished constructing y and class column");
             husky::lib::AggregatorFactory::sync();
             instances.numClasses=num_classes.get_value();
             instances.numAttributes=num_features.get_value();
             instances.numInstances=total_num_examples.get_value();
 
             husky::base::log_msg("finished loading "+filepath);
-            
-            return instances;
+
         }
     }
 }
