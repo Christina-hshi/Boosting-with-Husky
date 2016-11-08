@@ -50,8 +50,8 @@ public:
     attr_namelist.insert("y");
     attr_namelist.insert("class");
   }
-  void add(const Instance& instance){
-    list.add_object(instance);
+  size_t add(const Instance& instance){
+    return list.add_object(instance);
   }
   void globalize(){
     husky::globalize(list);

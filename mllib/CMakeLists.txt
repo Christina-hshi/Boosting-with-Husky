@@ -15,14 +15,16 @@
 
 include_directories(${PROJECT_SOURCE_DIR} ${Boost_INCLUDE_DIRS})
 
-add_library(learn-objs OBJECT
+add_library(test-objs OBJECT
     testcompile.cpp)
-set_property(TARGET learn-objs PROPERTY CXX_STANDARD 14)
+set_property(TARGET test-objs PROPERTY CXX_STANDARD 14)
 
-# Combine lib-objs
-set(mllib-objs $<TARGET_OBJECTS:learn-objs>)
+# add cpp files in mllib directory in 'mllib-objs'
+add_library(mllib-objs OBJECT
+	DataReader.cpp)
+set_property(TARGET mllib-objs PROPERTY CXX_STANDARD 14)
 
 # Visible to parent directory
-set(mllib-objs ${mllib-objs} PARENT_SCOPE)
+set(mllib-objs $<TARGET_OBJECTS:mllib-objs> PARENT_SCOPE)
 
-add_library(husky-mllib STATIC ${mllib-objs})
+add_library(husky-mllib STATIC $<TARGET_OBJECTS:test-objs> $<TARGET_OBJECTS:mllib-objs>)
