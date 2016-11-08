@@ -36,44 +36,48 @@ namespace husky{
             husky::base::log_msg("start loading "+filepath);
             husky::load(infmt, {&ac},parser);
             
+            instances.globalize();
             //create corresponding label
-            list_execute(instances.enumerator(), {}, {&ac}, [&](Instance& instance){
-                    switch(label_type)
-                    {
-                    case LABEL_TYPE::NO_LABEL :
-                        num_features.update(instance.X.size());
-                        break;
-                    case LABEL_TYPE::Y :
-                        double last = instance.X.back();
-                        instance.X.pop_back();
 
-                        num_features.update(instance.X.size() - 1);
-                        // set y attributes instances.set
-                        instances.set_y(instance, last);
-                        break;
-                    case LABEL_TYPE::CLASS :
-                        int c_label = instance.X.back(); //tested from 1-1000000000
-                        instance.X.pop_back();
+            switch(label_type)
+            {
+                case LABEL_TYPE::NO_LABEL :
+                    list_execute(instances.enumerator(), {}, {&ac}, [&](Instance& instance){
+                            num_features.update(instance.X.size());
+                            });
+                    break;
+                case LABEL_TYPE::Y :
+                    list_execute(instances.enumerator(), {}, {&ac}, [&](Instance& instance){
+                            double last = instance.X.back();
+                            instance.X.pop_back();
 
-                        num_classes.update(c_label + 1);
-                        num_features.update(instance.X.size() - 1);
-                        //set class attributes
-                        instances.set_class(instances, c_label);
-                        break;
+                            num_features.update(instance.X.size() - 1);
+                            // set y attributes instances.set
+                            instances.set_y(instance, last);
+                            });
+                    break;
+                case LABEL_TYPE::CLASS :
+                    list_execute(instances.enumerator(), {}, {&ac}, [&](Instance& instance){
+                            int c_label = instance.X.back(); //tested from 1-1000000000
+                            instance.X.pop_back();
 
-                    default :
-                        throw std::invalid_argument("label_type " + std::to_string(label_type) +  " dosen't exit!");
-                    }                
+                            num_classes.update(c_label + 1);
+                            num_features.update(instance.X.size() - 1);
+                            //set class attributes
+                            instances.set_class(instances, c_label);
+                            });
+                    break;
 
-                });
+                default :
+                    throw std::invalid_argument("label_type " + std::to_string(label_type) +  " dosen't exit!");
+            }                
+
             husky::lib::AggregatorFactory::sync();
             instances.numClasses=num_classes.get_value();
             instances.numAttributes=num_features.get_value();
             instances.numInstances=total_num_examples.get_value();
 
             husky::base::log_msg("finished loading "+filepath);
-            instances.globalize();
-            husky::base::log_msg("finished globalizing instances");
             
             return instances;
         }
