@@ -7,7 +7,7 @@ namespace husky{
   namespace mllib{
 class Instance{
 public:
-    typedef int KeyT;
+    using KeyT = std::string;
     KeyT key;
     Instance(){}
     explicit Instance(const KeyT& k) : key(k) {}
@@ -15,23 +15,23 @@ public:
     virtual KeyT const & id() const { return key;}
 
     vec_double X;
-    std::string last;
+
     Instance& operator=(const Instance& instance){
       if (this == &instance)
           return *this;
       // do the copy
       key=instance.key;
       X=instance.X;
-      last=instance.last;
+
       // return the existing object so we can chain this operator
       return *this;
     }
     friend husky::BinStream& operator<<(husky::BinStream& stream, const Instance& u) {
-        stream << u.key << u.X << u.last;
+        stream << u.key << u.X;
         return stream;
     }
     friend husky::BinStream& operator>>(husky::BinStream& stream, Instance& u) {
-        stream >> u.key >> u.X >> u.last;
+        stream >> u.key >> u.X;
         return stream;
     }
 };
@@ -39,20 +39,41 @@ public:
 class Instances{
 private:
   ObjList<Instance>& list;
+  std::set<std::string> attr_namelist;
   AttrList<Instance, double>&  ylist;
   AttrList<Instance, int>& classlist;
-//only one list to represent target
 public:
   int numAttributes;
   int numInstances;
   int numClasses;
   Instances() : list(husky::ObjListFactory::create_objlist<Instance>()),ylist(list.create_attrlist<double>("y")),classlist(list.create_attrlist<int>("class")){
+    attr_namelist.insert("y");
+    attr_namelist.insert("class");
   }
   void add(const Instance& instance){
     list.add_object(instance);
   }
   void globalize(){
     husky::globalize(list);
+  }
+  template <typename AttrT>
+  void createAttrlist(std::string name){
+    if(attr_namelist.find(name) != attr_namelist.end())
+      throw runtime_error("duplicated name of attribute lists");
+    list.create_attrlist<AttrT>(name);
+    attr_namelist.insert(name);
+  }
+  template <typename AttrT>
+  auto& getAttrlist(std::string name){
+    if(attr_namelist.find(name) == attr_namelist.end())
+      throw runtime_error("attribute list -"+ name+" doesn't exists");
+    return list.get_attrlist<AttrT>(name);
+  }
+  void deleteAttrlist(std::string name){
+    if(attr_namelist.find(name) == attr_namelist.end())
+      throw runtime_error("attribute list -"+ name+" doesn't exists");
+    list.del_attrlist(name);
+    attr_namelist.erase(name);
   }
   void set_y(const Instance& instance,double y){
     ylist.set(instance,y);
@@ -70,6 +91,7 @@ public:
   auto& enumerator() const{
     return list;
   }
+  //= will not copy extra attribute list(only copy ylist and classlist)
   Instances& operator= (const Instances& instances)
   {
     // self-assignment guard
