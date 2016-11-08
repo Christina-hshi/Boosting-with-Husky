@@ -21,7 +21,8 @@ set_property(TARGET test-objs PROPERTY CXX_STANDARD 14)
 
 # add cpp files in mllib directory in 'mllib-objs'
 add_library(mllib-objs OBJECT
-	DataReader.cpp)
+	DataReader.cpp
+	MaxAbsScaler.cpp)
 set_property(TARGET mllib-objs PROPERTY CXX_STANDARD 14)
 
 # Visible to parent directory
