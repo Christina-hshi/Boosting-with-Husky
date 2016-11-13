@@ -18,7 +18,7 @@
 #include "boost/tokenizer.hpp"
 
 #include "core/engine.hpp"
-#include "io/input/hdfs_line_inputformat.hpp"
+#include "io/input/inputformat_factory.hpp"
 #include "lib/aggregator_factory.hpp"
 
 class Vertex {
@@ -45,7 +45,7 @@ class Vertex {
 };
 
 void cc() {
-    husky::io::HDFSLineInputFormat infmt;
+    auto& infmt = husky::io::InputFormatFactory::create_line_inputformat();
     infmt.set_input(husky::Context::get_param("input"));
 
     // Create and globalize vertex objects
