@@ -57,11 +57,12 @@ public:
     husky::globalize(list);
   }
   template <typename AttrT>
-  void createAttrlist(std::string name){
+  auto& createAttrlist(std::string name){
     if(attr_namelist.find(name) != attr_namelist.end())
       throw std::runtime_error("duplicated name of attribute lists");
-    list.create_attrlist<AttrT>(name);
     attr_namelist.insert(name);
+    return list.create_attrlist<AttrT>(name);
+
   }
   template <typename AttrT>
   auto& getAttrlist(std::string name){

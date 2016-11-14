@@ -36,7 +36,7 @@ private:
 
 public:
   void fit(const mllib::Instances& original_instances);
-  void predict(mllib::Instances& instances,std::string prediction_name);
+  AttrList<Instance, double>&  predict(mllib::Instances& instances,std::string prediction_name="prediction");
   Estimator* clone(int seed=0){
     return new LinearRegression();
 
