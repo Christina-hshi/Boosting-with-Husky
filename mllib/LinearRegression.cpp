@@ -13,17 +13,14 @@ void LinearRegression::fit(const mllib::Instances& original_instances){
 
   mllib::Instances instances=original_instances;
   auto& pseudo_list=husky::ObjListFactory::create_objlist<PseudoObject>();
-
-//  pseudo_list.add_object(PseudoObject(0));
+  if(husky::Context::get_global_tid()==0)
+    pseudo_list.add_object(PseudoObject(0));
 
   globalize(pseudo_list);
 
   auto& ch1 =husky::ChannelFactory::create_push_combined_channel<matrix, husky::SumCombiner<matrix>>(instances.enumerator(), pseudo_list);
   auto& ch2 =husky::ChannelFactory::create_push_combined_channel<vec_double, husky::SumCombiner<vec_double>>(instances.enumerator(), pseudo_list);
 
-  list_execute(instances.enumerator(), [](Instance& instance) {
-      instance.X.push_back(1);
-  });
   int dimension=instances.numAttributes+1;
 
 
@@ -31,7 +28,7 @@ void LinearRegression::fit(const mllib::Instances& original_instances){
 
 
   list_execute(instances.enumerator(), [&instances,&ch1,&ch2,dimension](Instance& instance) {
-
+    instance.X.push_back(1);
     matrix A(dimension, vec_double(dimension));
     for(int a=0;a<dimension;a++){
       for(int b=0;b<dimension;b++){
@@ -51,15 +48,10 @@ void LinearRegression::fit(const mllib::Instances& original_instances){
 
 
   auto& ac = lib::AggregatorFactory::get_channel();
-  globalize(pseudo_list);
-    base::log_msg(std::to_string(pseudo_list.get_size()));
-  list_execute(pseudo_list, [&ch1,&ch2,dimension,&pv](PseudoObject& obj) {
-      if(obj.key==0)
-        std::cout << "size=0 but execute" << std::endl;
+
+  list_execute(pseudo_list, {&ch1,&ch2},{&ac},[&ch1,&ch2,dimension,&pv](PseudoObject& obj) {
       matrix M = ch1.get(obj);
-      std::cout << "sizeA:" << M.size()<<std::endl;
       vec_double XTy=ch2.get(obj);
-      std::cout << "sizeB:" << XTy.size()<<std::endl;
       MatrixInversion(M);
 
       vec_double output(dimension,0.0);
