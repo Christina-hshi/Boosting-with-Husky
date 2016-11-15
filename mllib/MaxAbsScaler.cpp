@@ -13,7 +13,10 @@ namespace husky{
 
         void MaxAbsScaler::fit(const Instances& instances){
             vec_double init_value = vec_double(instances.numAttributes, 0.0);
-            husky::lib::Aggregator<vec_double> scaling_X(init_value, max_abs_vec);
+            int dimension = instances.numAttributes;
+           
+            husky::lib::Aggregator<vec_double> scaling_X(init_value, max_abs_vec,
+                [dimension](vec_double& v){v = std::move(vec_double(dimension, 0)); });
 
             auto& ac = husky::lib::AggregatorFactory::get_channel();
             
