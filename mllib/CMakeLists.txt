@@ -28,4 +28,5 @@ set_property(TARGET mllib-objs PROPERTY CXX_STANDARD 14)
 # Visible to parent directory
 set(mllib-objs $<TARGET_OBJECTS:mllib-objs> PARENT_SCOPE)
 
-add_library(husky-mllib STATIC $<TARGET_OBJECTS:test-objs> $<TARGET_OBJECTS:mllib-objs>)
+#$<TARGET_OBJECTS:test-objs> 
+add_library(husky-mllib STATIC $<TARGET_OBJECTS:mllib-objs>)

@@ -26,7 +26,7 @@ typedef std::vector<double> vec_double;
 typedef std::vector<std::vector<double>> matrix;
 
 
-std::string vec_to_str(vec_double v) {
+inline std::string vec_to_str(vec_double v) {
     std::string str("");
     for (auto& x : v) {
         str += std::to_string(x);
@@ -34,7 +34,8 @@ std::string vec_to_str(vec_double v) {
     }
     return str;
 }
-matrix& operator+= (matrix& ma, const matrix& mb) {
+
+inline matrix& operator+= (matrix& ma, const matrix& mb) {
 
     int m = ma.size();
     int n = ma[0].size();
@@ -44,7 +45,7 @@ matrix& operator+= (matrix& ma, const matrix& mb) {
     return ma;
 }
 // Inner Product
-double operator* (const vec_double& va, const vec_double& vb) {
+inline double operator* (const vec_double& va, const vec_double& vb) {
     int n = va.size();
     double sum = 0.0;
     for (int i=0; i < n; i++) sum += va[i] * vb[i];
@@ -52,26 +53,26 @@ double operator* (const vec_double& va, const vec_double& vb) {
 }
 
 // Vector Addition
-vec_double& operator+= (vec_double& va, const vec_double& vb) {
+inline vec_double& operator+= (vec_double& va, const vec_double& vb) {
     int n = va.size();
     for (int i=0; i < n; i++) va[i] += vb[i];
     return va;
 }
 
-vec_double& operator-= (vec_double& va, const vec_double& vb) {
+inline vec_double& operator-= (vec_double& va, const vec_double& vb) {
     int n = va.size();
     for (int i=0; i < n; i++) va[i] -= vb[i];
     return va;
 }
 
 // Scalar multiplication
-vec_double& operator*= (vec_double& va, const double& c) {
+inline vec_double& operator*= (vec_double& va, const double& c) {
     int n = va.size();
     for (int i=0; i < n; i++) va[i] *= c;
     return va;
 }
 // elementwise division
-vec_double& operator /=(vec_double& a, const vec_double& b)
+inline vec_double& operator /=(vec_double& a, const vec_double& b)
 {
     std::size_t a_size = a.size();
     for(std::size_t i = 0; i < a_size; i++)
@@ -81,7 +82,7 @@ vec_double& operator /=(vec_double& a, const vec_double& b)
     return a;
 }
 // elementwise multiplcation
-vec_double& operator *=(vec_double& a, const vec_double& b)
+inline vec_double& operator *=(vec_double& a, const vec_double& b)
 {
     std::size_t a_size = a.size();
     for(std::size_t i = 0; i < a_size; i++)
@@ -115,7 +116,7 @@ bool InvertMatrix (const ublas::matrix<T>& input, ublas::matrix<T>& inverse) {
 }
 
 
-bool MatrixInversion(matrix& input){
+inline bool MatrixInversion(matrix& input){
   int n=input.size();
   ublas::matrix<double> input2 (n,n);
   ublas::matrix<double> output2 (n,n);
@@ -136,7 +137,7 @@ bool MatrixInversion(matrix& input){
   }
 }
 
-void MatrixVectormultiplication(const matrix& A,const vec_double& B,vec_double& output){
+inline void MatrixVectormultiplication(const matrix& A,const vec_double& B,vec_double& output){
   int m=A.size();
   int n=A[0].size();
   for(int i=0;i<m;i++){

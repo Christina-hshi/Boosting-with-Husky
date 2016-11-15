@@ -2,7 +2,7 @@
 #include <string>
 #include <stdexcept>
 #include "mllib/Instances.hpp"
-#include "io/input/hdfs_line_inputformat.hpp"
+#include "io/input/line_inputformat.hpp"
 #include "boost/tokenizer.hpp"
 #include "lib/aggregator_factory.hpp"
 

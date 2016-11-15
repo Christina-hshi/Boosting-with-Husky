@@ -8,9 +8,9 @@ namespace husky{
         public:
             DataPreprocessor(){};
             virtual void fit(const Instances& instances) = 0;
-            virtual void fit_transform(Instance& instances) = 0;
+            virtual void fit_transform(Instances& instances) = 0;
             virtual void transform(Instances& instances) = 0;
-            virtual void inverse_transfrom(Instance& instances) = 0; 
-        }
+            virtual void inverse_transfrom(Instances& instances) = 0; 
+        };
     }
 }

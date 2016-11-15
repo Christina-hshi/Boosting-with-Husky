@@ -31,7 +31,7 @@ namespace husky{
                 total_num_examples.update(1);
             };
 
-            husky::io::HDFSLineInputFormat infmt;
+            husky::io::LineInputFormat infmt;
             infmt.set_input(filepath);
             husky::base::log_msg("start loading "+filepath);
             husky::load(infmt, {&ac},parser);
