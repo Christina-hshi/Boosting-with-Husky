@@ -33,13 +33,15 @@ namespace husky{
 
             husky::io::LineInputFormat infmt;
             infmt.set_input(filepath);
-            husky::base::log_msg("start loading "+filepath);
+            if (husky::Context::get_global_tid() == 0) {
+                husky::base::log_msg("Start loading data from " + filepath);
+            }
             husky::load(infmt, {&ac},parser);
-            husky::base::log_msg("finished loading "+filepath);
+            //husky::base::log_msg("finished loading "+filepath);
             instances.globalize();
-            husky::base::log_msg("finished globalizing instances");
+            //husky::base::log_msg("finished globalizing instances");
             //create corresponding label
-            husky::base::log_msg("start constructing y and class column");
+            //husky::base::log_msg("start constructing y and class column");
             switch(label_type)
             {
                 case LABEL_TYPE::NO_LABEL :
@@ -72,14 +74,15 @@ namespace husky{
                 default :
                     throw std::invalid_argument("label_type " + std::to_string((int)label_type) +  " dosen't exit!");
             }
-            husky::base::log_msg("finished constructing y and class column");
+            //husky::base::log_msg("finished constructing y and class column");
             husky::lib::AggregatorFactory::sync();
             instances.numClasses=num_classes.get_value();
             instances.numAttributes=num_features.get_value();
             instances.numInstances=total_num_examples.get_value();
 
-            husky::base::log_msg("finished loading "+filepath);
-
+            if (husky::Context::get_global_tid() == 0) {
+                husky::base::log_msg("Data loading completed!");
+            }
         }
     }
 }

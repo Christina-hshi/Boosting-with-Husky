@@ -1,7 +1,7 @@
 #pragma once
 
 #include "mllib/Instances.hpp"
-#include "mllib/BaseEstimator.hpp"
+#include "mllib/Estimator.hpp"
 
 #include "lib/aggregator_factory.hpp"
 

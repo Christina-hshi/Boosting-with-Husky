@@ -13,9 +13,13 @@ matrix operation::
 */
 #pragma once
 
-#include<cstddef>
-#include<string>
-#include<vector>
+#include <cstddef>
+#include <string>
+#include <vector>
+#include <ctime>
+#include <cmath>
+#include <cstdlib>
+
 #include <boost/numeric/ublas/vector.hpp>
 #include <boost/numeric/ublas/vector_proxy.hpp>
 #include <boost/numeric/ublas/matrix.hpp>
@@ -44,7 +48,7 @@ inline matrix& operator+= (matrix& ma, const matrix& mb) {
         ma[i][j] += mb[i][j];
     return ma;
 }
-// Inner Product
+// Inner Product : tolerance the case where length(va) <= length(vb)
 inline double operator* (const vec_double& va, const vec_double& vb) {
     int n = va.size();
     double sum = 0.0;
@@ -58,6 +62,12 @@ inline vec_double& operator+= (vec_double& va, const vec_double& vb) {
     for (int i=0; i < n; i++) va[i] += vb[i];
     return va;
 }
+inline vec_double operator+ (const vec_double& va, const vec_double& vb) {
+    int n = va.size();
+    vec_double result(n, 0.0);
+    for (int i=0; i < n; i++) result[i] = va[i] + vb[i];
+    return result;
+}
 
 inline vec_double& operator-= (vec_double& va, const vec_double& vb) {
     int n = va.size();
@@ -65,10 +75,21 @@ inline vec_double& operator-= (vec_double& va, const vec_double& vb) {
     return va;
 }
 
-// Scalar multiplication
+// Scalar multiplication and division
 inline vec_double& operator*= (vec_double& va, const double& c) {
     int n = va.size();
     for (int i=0; i < n; i++) va[i] *= c;
+    return va;
+}
+inline vec_double operator* (const double& c, const vec_double& va) {
+    int n = va.size();
+    vec_double result(n, 0.0);
+    for (int i=0; i < n; i++) result[i] = va[i] * c;
+    return result;
+}
+inline vec_double& operator/= (vec_double& va, const double& c) {
+    int n = va.size();
+    for (int i=0; i < n; i++) va[i] /= c;
     return va;
 }
 // elementwise division

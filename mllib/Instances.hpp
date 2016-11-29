@@ -65,7 +65,7 @@ public:
 
   }
   template <typename AttrT>
-  auto& getAttrlist(std::string name){
+  auto& getAttrlist(std::string name)const{
     if(attr_namelist.find(name) == attr_namelist.end())
       throw std::runtime_error("attribute list -"+ name+" doesn't exists");
     return list.get_attrlist<AttrT>(name);

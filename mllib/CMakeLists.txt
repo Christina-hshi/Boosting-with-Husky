@@ -22,11 +22,14 @@ set_property(TARGET test-objs PROPERTY CXX_STANDARD 14)
 # add cpp files in mllib directory in 'mllib-objs'
 add_library(mllib-objs OBJECT
 	DataReader.cpp
-	MaxAbsScaler.cpp)
+	MaxAbsScaler.cpp
+	LinearRegression.cpp
+	LinearRegression_SGD.cpp
+	)
 set_property(TARGET mllib-objs PROPERTY CXX_STANDARD 14)
 
 # Visible to parent directory
 set(mllib-objs $<TARGET_OBJECTS:mllib-objs> PARENT_SCOPE)
 
-#$<TARGET_OBJECTS:test-objs> 
+#$<TARGET_OBJECTS:mllib-objs> 
 add_library(husky-mllib STATIC $<TARGET_OBJECTS:mllib-objs>)
