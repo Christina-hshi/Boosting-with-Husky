@@ -13,13 +13,12 @@
 # limitations under the License.
 
 
-include_directories(${PROJECT_SOURCE_DIR} ${Boost_INCLUDE_DIRS})
-
-add_library(gradient-descent-objs OBJECT vector_linalg.cpp)
-set_property(TARGET gradient-descent-objs PROPERTY CXX_STANDARD 14)
-
-# Combine lib-objs
-set(ml-objs $<TARGET_OBJECTS:gradient-descent-objs>)
-
-# Visible to parent directory
-set(ml-objs ${ml-objs} PARENT_SCOPE)
+# Short command for setting default properties
+# Usage:
+#   husky_default_properties(<target>)
+function(husky_default_properties target)
+    set_property(TARGET ${target} PROPERTY CXX_STANDARD 14)
+    if (DEFINED external_project_dependencies)
+        add_dependencies(${target} ${external_project_dependencies})
+    endif()
+endfunction()

@@ -13,23 +13,13 @@
 # limitations under the License.
 
 
-include_directories(${PROJECT_SOURCE_DIR} ${Boost_INCLUDE_DIRS})
-
-if(LIBHDFS3_FOUND)
-    include_directories(${LIBHDFS3_INCLUDE_DIR})
-    add_definitions(-DWITH_HDFS)
-endif(LIBHDFS3_FOUND)
-
-if(MONGOCLIENT_FOUND)
-    include_directories(${MONGOCLIENT_INCLUDE_DIR})
-    add_definitions(-DWITH_MONGODB)
-endif(MONGOCLIENT_FOUND)
+include_directories(${PROJECT_SOURCE_DIR} ${EXTERNAL_INCLUDE})
 
 add_subdirectory(input)
 add_subdirectory(output)
 
 add_library(hdfs-objs OBJECT hdfs_manager.cpp)
-set_property(TARGET hdfs-objs PROPERTY CXX_STANDARD 14)
+husky_default_properties(hdfs-objs)
 
 # Combine io_objs
 set(io-objs $<TARGET_OBJECTS:hdfs-objs> $<TARGET_OBJECTS:input-objs> $<TARGET_OBJECTS:output-objs>)

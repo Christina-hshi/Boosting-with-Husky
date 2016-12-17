@@ -13,17 +13,13 @@
 # limitations under the License.
 
 
-include_directories(${PROJECT_SOURCE_DIR} ${Boost_INCLUDE_DIRS})
+include_directories(${PROJECT_SOURCE_DIR} ${EXTERNAL_INCLUDE})
 
 add_subdirectory(channel)
 
-if(DEP_FOUND)
-    include_directories(${ZMQ_INCLUDE_DIR})
-endif(DEP_FOUND)
-
 add_library(core-objs OBJECT
     accessor.cpp
-    accessor_factory.cpp
+    accessor_store.cpp
     combiner.cpp
     config.cpp
     context.cpp
@@ -32,9 +28,10 @@ add_library(core-objs OBJECT
     job_runner.cpp
     mailbox.cpp
     network.cpp
-    objlist_factory.cpp
-    shuffle_combiner_factory.cpp
-    worker_info.cpp)
-set_property(TARGET core-objs PROPERTY CXX_STANDARD 14)
+    objlist_store.cpp
+    shuffle_combiner_store.cpp
+    worker_info.cpp
+    balance.cpp)
+husky_default_properties(core-objs)
 
 add_library(husky-core STATIC $<TARGET_OBJECTS:core-objs> $<TARGET_OBJECTS:channel-objs>)

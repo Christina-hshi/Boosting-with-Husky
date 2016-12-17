@@ -34,6 +34,13 @@ class PushChannel : public Source2ObjListChannel<DstObjT> {
     PushChannel(ChannelSource* src, ObjList<DstObjT>* dst) : Source2ObjListChannel<DstObjT>(src, dst) {
         this->src_ptr_->register_outchannel(this->channel_id_, this);
         this->dst_ptr_->register_inchannel(this->channel_id_, this);
+
+        recv_comm_handler_ = [&](const MsgT& msg, DstObjT* recver_obj) {
+            size_t idx = this->dst_ptr_->index_of(recver_obj);
+            if (idx >= recv_buffer_.size())
+                recv_buffer_.resize(idx + 1);
+            recv_buffer_[idx].push_back(std::move(msg));
+        };
     }
 
     ~PushChannel() override {
@@ -48,10 +55,14 @@ class PushChannel : public Source2ObjListChannel<DstObjT> {
     PushChannel(PushChannel&&) = default;
     PushChannel& operator=(PushChannel&&) = default;
 
-    void customized_setup() override { send_buffer_.resize(this->worker_info_->get_num_workers()); }
+    void customized_setup() override {
+        // use get_largest_tid() instead of get_num_workers()
+        // sine we may only use a subset of worker
+        send_buffer_.resize(this->worker_info_->get_largest_tid()+1);
+    }
 
     void push(const MsgT& msg, const typename DstObjT::KeyT& key) {
-        int dst_worker_id = this->hash_ring_->hash_lookup(key);
+        int dst_worker_id = this->worker_info_->get_hash_ring()->hash_lookup(key);
         send_buffer_[dst_worker_id] << key << msg;
     }
 
@@ -75,10 +86,13 @@ class PushChannel : public Source2ObjListChannel<DstObjT> {
         int start = this->global_id_;
         for (int i = 0; i < send_buffer_.size(); ++i) {
             int dst = (start + i) % send_buffer_.size();
+            if (send_buffer_[dst].size() == 0)
+                continue;
             this->mailbox_->send(dst, this->channel_id_, this->progress_, send_buffer_[dst]);
             send_buffer_[dst].purge();
         }
-        this->mailbox_->send_complete(this->channel_id_, this->progress_, this->hash_ring_);
+        this->mailbox_->send_complete(this->channel_id_, this->progress_, this->worker_info_->get_local_tids(),
+                                      this->worker_info_->get_pids());
     }
 
     /// This method is only useful without list_execute
@@ -91,6 +105,17 @@ class PushChannel : public Source2ObjListChannel<DstObjT> {
             process_bin(bin_push);
         }
         this->reset_flushed();
+    }
+
+    /// \brief Set a customized handler to handle incoming communication
+    ///
+    /// The handler takes the message and its destinating object as its two arguments.
+    /// Then the handler decides the operation to apply on this object.
+    ///
+    /// @param comm_handler A handler that contains the operation to be applied on
+    ///                     the obejct, using the received message.
+    void set_recv_comm_handler(std::function<void(const MsgT&, DstObjT*)> recv_comm_handler) {
+        recv_comm_handler_ = recv_comm_handler;
     }
 
    protected:
@@ -107,19 +132,16 @@ class PushChannel : public Source2ObjListChannel<DstObjT> {
             bin_push >> msg;
 
             DstObjT* recver_obj = this->dst_ptr_->find(key);
-            size_t idx;
             if (recver_obj == nullptr) {
                 DstObjT obj(key);  // Construct obj using key only
-                idx = this->dst_ptr_->add_object(std::move(obj));
-            } else {
-                idx = this->dst_ptr_->index_of(recver_obj);
+                size_t idx = this->dst_ptr_->add_object(std::move(obj));
+                recver_obj = &(this->dst_ptr_->get(idx));
             }
-            if (idx >= recv_buffer_.size())
-                recv_buffer_.resize(idx + 1);
-            recv_buffer_[idx].push_back(std::move(msg));
+            recv_comm_handler_(msg, recver_obj);
         }
     }
 
+    std::function<void(const MsgT&, DstObjT*)> recv_comm_handler_;
     std::vector<BinStream> send_buffer_;
     std::vector<std::vector<MsgT>> recv_buffer_;
 };

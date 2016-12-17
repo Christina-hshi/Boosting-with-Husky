@@ -13,53 +13,45 @@
 # limitations under the License.
 
 
-include_directories(${PROJECT_SOURCE_DIR})
+include_directories(${PROJECT_SOURCE_DIR} ${EXTERNAL_INCLUDE})
 
 set(husky husky-lib husky-io husky-core husky-base) 
-
-# GTest, GMock
-
-find_package(Threads REQUIRED)
-include(ExternalProject)
-ExternalProject_Add(
-    gtest
-    GIT_REPOSITORY https://github.com/google/googletest.git
-    PREFIX ${PROJECT_BINARY_DIR}/gtest
-    CMAKE_ARGS -DCMAKE_INSTALL_PREFIX:PATH=${PROJECT_BINARY_DIR}
-    CMAKE_ARGS -Dgtest_disable_pthreads=ON
-    UPDATE_COMMAND ""
-)
-
-set(GTEST_INCLUDE "${PROJECT_BINARY_DIR}/include")
-include_directories(${GTEST_INCLUDE})
-
-set(GTEST_LIBRARIES
-    "${PROJECT_BINARY_DIR}/lib/libgtest.a"
-    "${PROJECT_BINARY_DIR}/lib/libgtest_main.a")
-
-set(GMOCK_LIBRARIES
-    "${PROJECT_BINARY_DIR}/lib/libgmock.a"
-    "${PROJECT_BINARY_DIR}/lib/libgmock_main.a")
 
 # Unit Test
 
 file(GLOB_RECURSE UNITTEST_FILES ${PROJECT_SOURCE_DIR}/*_unittest.cpp) 
+remove_definitions(-DWITH_THRIFT)  # Workaround for namespace collisions between gtest and flume.
+include_directories(${GTEST_INCLUDE})
 add_executable(HuskyUnitTest ${UNITTEST_FILES} unittest_main.cpp)
 add_dependencies(HuskyUnitTest gtest)
 target_link_libraries(HuskyUnitTest ${husky})
 target_link_libraries(HuskyUnitTest ${EXTERNAL_LIB})
 target_link_libraries(HuskyUnitTest ${GTEST_LIBRARIES})
 target_link_libraries(HuskyUnitTest ${GMOCK_LIBRARIES})
-set_property(TARGET HuskyUnitTest PROPERTY CXX_STANDARD 14)
+husky_default_properties(HuskyUnitTest)
+
+# Functional Test
 
 # TestAsync 
 add_executable(TestAsync test-async.cpp)
 target_link_libraries(TestAsync ${husky})
 target_link_libraries(TestAsync ${EXTERNAL_LIB})
-set_property(TARGET TestAsync PROPERTY CXX_STANDARD 14)
+husky_default_properties(TestAsync)
 
 # TestBinaryInputFormat
 add_executable(TestBinaryInputFormat test-binary-inputformat.cpp)
 target_link_libraries(TestBinaryInputFormat ${husky})
 target_link_libraries(TestBinaryInputFormat ${EXTERNAL_LIB})
-set_property(TARGET TestBinaryInputFormat PROPERTY CXX_STANDARD 14)
+husky_default_properties(TestBinaryInputFormat)
+
+# TestLogMsg
+add_executable(TestLogMsg test-log-msg.cpp)
+target_link_libraries(TestLogMsg ${husky})
+target_link_libraries(TestLogMsg ${EXTERNAL_LIB})
+husky_default_properties(TestLogMsg)
+
+# TestMongoDBOutputFormat
+add_executable(TestMongoDBOutputFormat test-mongodb-outputformat.cpp)
+target_link_libraries(TestMongoDBOutputFormat ${husky})
+target_link_libraries(TestMongoDBOutputFormat ${EXTERNAL_LIB})
+husky_default_properties(TestMongoDBOutputFormat)

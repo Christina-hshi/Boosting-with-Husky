@@ -50,7 +50,7 @@ bool LocalMailbox::poll(int channel_id, int progress) {
     // step 2: check the flag
     // block when the queue is not empty but the flag is true
     // std::unique_lock<std::mutex> lock(poll_mutex_.get(channel_id, progress));
-    std::unique_lock<std::mutex> lock(notify_lock);
+    std::unique_lock<std::mutex> lock(notify_lock_);
 
     poll_cv_.wait(lock, [&]() {
         if (in_queue_.get(channel_id, progress).size() > 0)
@@ -114,7 +114,7 @@ bool LocalMailbox::poll(const std::vector<std::pair<int, int>>& channel_progress
         }
     }
 
-    std::unique_lock<std::mutex> lock(notify_lock);
+    std::unique_lock<std::mutex> lock(notify_lock_);
     poll_cv_.wait(lock, [&]() {
         for (auto& chnl_prgs_pair : channel_progress_pairs)
             if (in_queue_.get(chnl_prgs_pair.first, chnl_prgs_pair.second).size() > 0)
@@ -156,16 +156,12 @@ void LocalMailbox::send(int thread_id, int channel_id, int progress, BinStream& 
     event_loop_connector_->generate_out_comm_event(thread_id, channel_id, progress, bin_stream);
 }
 
-void LocalMailbox::send_complete(int channel_id, int progress, HashRing* hash_ring) {
-    send_complete(channel_id, progress, hash_ring, hash_ring);
-}
-
-void LocalMailbox::send_complete(int channel_id, int progress, HashRing* src_hash_ring, HashRing* dst_hash_ring) {
-    auto& sender_tids = src_hash_ring->get_global_tids();
+void LocalMailbox::send_complete(int channel_id, int progress, const std::vector<int>& sender_tids,
+                                 const std::vector<int>& recver_pids) {
     if (std::find(sender_tids.begin(), sender_tids.end(), thread_id_) != sender_tids.end()) {
-        auto* global_pids_copy = new std::vector<int>(dst_hash_ring->get_global_pids());
-        event_loop_connector_->generate_out_comm_complete_event(
-            channel_id, progress, src_hash_ring->get_num_local_threads(process_id_), global_pids_copy);
+        auto* recver_pids_copy = new std::vector<int>(recver_pids);
+        event_loop_connector_->generate_out_comm_complete_event(channel_id, progress, sender_tids.size(),
+                                                                recver_pids_copy);
     }
 }
 
@@ -281,9 +277,13 @@ void MailboxEventLoop::_recv_comm_handler(int thread_id, int channel_id, int pro
                ("[ERROR] Local mailbox for " + std::to_string(thread_id) + " does not exist").c_str());
 
     auto& mailbox = *(registered_mailbox_[thread_id]);
-
-    mailbox.in_queue_.get(channel_id, progress).push(std::move(recv_bin_stream_ptr));
-    mailbox.poll_cv_.notify_one();
+    {
+        std::lock_guard<std::mutex> cv_lock(mailbox.notify_lock_);
+        mailbox.in_queue_.get(channel_id, progress).push(std::move(recv_bin_stream_ptr));
+        mailbox.poll_cv_.notify_one();
+    }
+    if (mailbox.comm_available_handler_)
+        mailbox.comm_available_handler_(channel_id, progress);
 }
 
 void MailboxEventLoop::send_comm_handler() {
@@ -367,10 +367,13 @@ void MailboxEventLoop::_recv_comm_complete_handler(int channel_id, int progress,
         for (auto& tid_mailbox_pair : registered_mailbox_) {
             int thread_id = tid_mailbox_pair.first;
             auto& mailbox = *(registered_mailbox_[thread_id]);
-            std::unique_lock<std::mutex> cv_lock(mailbox.notify_lock);
-            mailbox.comm_completed_.get(channel_id, progress) = true;
-            cv_lock.unlock();
-            mailbox.poll_cv_.notify_one();
+            {
+                std::lock_guard<std::mutex> cv_lock(mailbox.notify_lock_);
+                mailbox.comm_completed_.get(channel_id, progress) = true;
+                mailbox.poll_cv_.notify_one();
+            }
+            if (mailbox.comm_complete_handler_)
+                mailbox.comm_complete_handler_(channel_id, progress);
         }
         recv_comm_complete_counter_.erase(chnl_prgs_pair);
     }
@@ -379,7 +382,7 @@ void MailboxEventLoop::_recv_comm_complete_handler(int channel_id, int progress,
 void MailboxEventLoop::register_peer_recver(int process_id, const std::string& addr) {
     ASSERT_MSG(sender_.count(process_id) == 0, "Register the same peer recver more than once");
     sender_[process_id] = new zmq::socket_t(*zmq_context_, ZMQ_PUSH);
-    int linger = 2000;
+    int linger = 4000;
     sender_[process_id]->setsockopt(ZMQ_LINGER, &linger, sizeof(linger));
     sender_[process_id]->connect(addr);
     num_global_processes_ += 1;

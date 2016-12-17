@@ -12,21 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "core/objlist_factory.hpp"
+#pragma once
 
-#include <string>
 #include <unordered_map>
-
-#include "base/session_local.hpp"
 
 namespace husky {
 
-thread_local int ObjListFactory::default_objlist_id = 0;
-thread_local std::unordered_map<std::string, ObjListBase*> ObjListFactory::objlist_map;
-const char* ObjListFactory::objlist_name_prefix = "default_objlist_";
-// set finalize_all_objlists priority to Level1, the higher the level, the higher the priority
-static thread_local base::RegSessionThreadFinalizer finalize_all_objlists(base::SessionLocalPriority::Level1, []() {
-    ObjListFactory::drop_all_objlists();
-});
+std::unordered_map<int, int> base_balance_algo(std::unordered_map<int, int>& num_objs, int id);
 
+std::unordered_map<int, std::unordered_map<int, int>> base_balance_algo_for_all(std::unordered_map<int, int>& num_objs);
+
+std::unordered_map<int, int> local_balance_first_algo(std::unordered_map<int, int>& num_objs, int id);
+
+std::unordered_map<int, std::unordered_map<int, int>> local_balance_first_algo_for_all(
+    std::unordered_map<int, int>& num_objs);
 }  // namespace husky

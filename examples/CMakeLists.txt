@@ -13,21 +13,19 @@
 # limitations under the License.
 
 
-include_directories(${PROJECT_SOURCE_DIR} ${Boost_INCLUDE_DIRS})
+include_directories(${PROJECT_SOURCE_DIR} ${EXTERNAL_INCLUDE})
 
-if(LIBHDFS3_FOUND)
-    include_directories(${LIBHDFS3_INCLUDE_DIR})
-    add_definitions(-DWITH_HDFS)
-endif(LIBHDFS3_FOUND)
+set(husky husky-lib husky-io husky-core husky-base) 
 
-if(MONGOCLIENT_FOUND)
-    include_directories(${MONGOCLIENT_INCLUDE_DIR})
-    add_definitions(-DWITH_MONGODB)
-endif(MONGOCLIENT_FOUND)
+### Applications
 
 set(husky husky-mllib husky-lib husky-io husky-core husky-base)
 
-### Applications
+# LabeledPoint
+add_executable(LabeledPoint labeled_point.cpp)
+target_link_libraries(LabeledPoint ${husky})
+target_link_libraries(LabeledPoint ${EXTERNAL_LIB})
+husky_default_properties(LabeledPoint)
 
 ## WordCountMR
 #add_executable(WordCountMR wc_mr.cpp)

@@ -31,9 +31,9 @@
 
 namespace husky {
 
+using base::BinStream;
 using base::ConcurrentChannelStore;
 using base::ConcurrentQueue;
-using base::BinStream;
 
 class EventLoopConnector;
 class MailboxEventLoop;
@@ -115,19 +115,11 @@ class LocalMailbox {
     ///
     /// @param channel_id Channel of the communication.
     /// @param progress Progress of the corresponding Channel.
-    /// @param src_hash_ring Group of threads that issue the outgoing communication
-    /// @param src_hash_ring Group of threads that will receive the communication
-    void send_complete(int channel_id, int progress, HashRing* src_hash_ring, HashRing* dst_hash_ring);
-
-    /// \brief Indicate that a round of outgoing communication finishes.
-    ///
-    /// Similar as send_complete(int channel_id, int progress, HashRing* src_hash_ring, HashRing* dst_hash_ring)
-    /// except that the communication happen within the same group of machines.
-    ///
-    /// @param channel_id Channel of the communication.
-    /// @param progress Progress of the corresponding Channel.
-    /// @param src_hash_ring Group of threads that involes in the communication
-    void send_complete(int channel_id, int progress, HashRing* hash_ring);
+    /// @param sender_tids Global thread ids of the *local* process that issue
+    ///        the outgoing communication
+    /// @param recver_tids Global ids of threads that will possibly receive the communication
+    void send_complete(int channel_id, int progress, const std::vector<int>& sender_tids,
+                       const std::vector<int>& recver_tids);
 
     /// \brief Receive incoming communication
     ///
@@ -140,6 +132,26 @@ class LocalMailbox {
     /// @return The actual incoming communication in the form of BinStream.
     BinStream recv(int channel_id, int progress);
 
+    /// \brief Set the handler for new incoming communication
+    ///
+    /// The handler will be apply once there's new incoming communication available
+    /// (in the form of BinStream).
+    ///
+    /// @param handler The handler to use
+    void set_comm_available_handler(std::function<void(int channel_id, int progress)> handler) {
+        comm_available_handler_ = handler;
+    }
+
+    /// \brief Set the handler at the completion incoming communication
+    ///
+    /// The handler will be used once the communication of a specific (channel_id, progress)
+    /// pair finishes.
+    ///
+    /// @param handler The handler to use
+    void set_comm_complete_handler(std::function<void(int channel_id, int progress)> handler) {
+        comm_complete_handler_ = handler;
+    }
+
     friend class MailboxEventLoop;
 
    protected:
@@ -147,7 +159,9 @@ class LocalMailbox {
     int process_id_ = 0;
     zmq::context_t* zmq_context_;
     std::condition_variable poll_cv_;
-    std::mutex notify_lock;
+    std::mutex notify_lock_;
+    std::function<void(int, int)> comm_available_handler_;
+    std::function<void(int, int)> comm_complete_handler_;
 
     ConcurrentChannelStore<ConcurrentQueue<BinStream*>> in_queue_;
     ConcurrentChannelStore<bool> comm_completed_;
@@ -159,6 +173,7 @@ class CentralRecver {
    public:
     // Create the recver thread and recver socket
     CentralRecver(zmq::context_t* zmq_context, const std::string& bind_addr);
+
     // Join the thread and free resources
     virtual ~CentralRecver();
 

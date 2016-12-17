@@ -141,6 +141,8 @@ class ObjList : public ObjListBase {
     // @Return a pointer to obj
     ObjT* find(const typename ObjT::KeyT& key) {
         auto& working_list = objlist_data_.data_;
+        if (working_list.size() == 0)
+            return nullptr;
         ObjT* start_addr = &working_list[0];
         int r = this->sorted_size - 1;
         int l = 0;
@@ -199,11 +201,11 @@ class ObjList : public ObjListBase {
 
     // Create AttrList
     template <typename AttrT>
-    AttrList<ObjT, AttrT>& create_attrlist(const std::string& attr_name) {
+    AttrList<ObjT, AttrT>& create_attrlist(const std::string& attr_name, const AttrT& default_attr = {}) {
         if (attrlist_map.find(attr_name) != attrlist_map.end()) {
             throw base::HuskyException("ObjList<T>::create_attrlist error: name already exists");
         }
-        auto* attrlist = new AttrList<ObjT, AttrT>(&objlist_data_);
+        auto* attrlist = new AttrList<ObjT, AttrT>(&objlist_data_, default_attr);
         attrlist_map.insert({attr_name, attrlist});
         return (*attrlist);
     }
@@ -241,10 +243,6 @@ class ObjList : public ObjListBase {
         }
     }
 
-    void set_hash_ring(const HashRing& hash_ring) { hash_ring_.reset(new HashRing(hash_ring)); }
-
-    const HashRing& get_hash_ring() { return *hash_ring_; }
-
     // getter
     inline size_t get_sorted_size() const { return sorted_size; }
     inline size_t get_num_del() const { return objlist_data_.num_del_; }
@@ -259,6 +257,5 @@ class ObjList : public ObjListBase {
     size_t sorted_size = 0;
     std::unordered_map<typename ObjT::KeyT, size_t> hashed_objs;
     std::unordered_map<std::string, AttrListBase*> attrlist_map;
-    std::unique_ptr<HashRing> hash_ring_;
 };
 }  // namespace husky

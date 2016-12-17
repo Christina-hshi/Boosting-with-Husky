@@ -44,14 +44,13 @@ class ChannelBase {
     /// Setter
     void set_local_id(size_t local_id);
     void set_global_id(size_t global_id);
-    void set_worker_info(WorkerInfo* worker_info);
+    void set_worker_info(const WorkerInfo& worker_info);
     void set_mailbox(LocalMailbox* mailbox);
-    void set_hash_ring(HashRing* hash_ring);
 
     void set_as_async_channel();
     void set_as_sync_channel();
 
-    void setup(size_t, size_t, WorkerInfo*, LocalMailbox*, HashRing*);
+    void setup(size_t local_id, size_t global_id, const WorkerInfo& worker_info, LocalMailbox* mailbox);
 
     /// customized_setup() is used to do customized setup for subclass
     virtual void customized_setup() = 0;
@@ -96,9 +95,9 @@ class ChannelBase {
 
     std::vector<bool> flushed_{0};
 
-    WorkerInfo* worker_info_ = nullptr;
+    std::unique_ptr<WorkerInfo> worker_info_;
     LocalMailbox* mailbox_ = nullptr;
-    HashRing* hash_ring_ = nullptr;
+    const HashRing* hash_ring_ = nullptr;
 
     static thread_local size_t counter;
 };

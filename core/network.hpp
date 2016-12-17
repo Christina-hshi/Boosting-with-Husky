@@ -18,8 +18,6 @@
 namespace husky {
 
 std::string get_hostname();
-std::string ns_lookup(const std::string& name);
-std::set<std::string> get_self_ips();
 bool is_local(const std::string& name);
 
 }  // namespace husky

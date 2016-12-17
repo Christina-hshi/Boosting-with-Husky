@@ -13,20 +13,18 @@
 # limitations under the License.
 
 
-include_directories(${PROJECT_SOURCE_DIR} ${Boost_INCLUDE_DIRS})
+include_directories(${PROJECT_SOURCE_DIR} ${EXTERNAL_INCLUDE})
 
 add_library(aggregator-objs OBJECT
     aggregator.cpp
     aggregator_object.cpp
     aggregator_factory.cpp)
-set_property(TARGET aggregator-objs PROPERTY CXX_STANDARD 14)
+husky_default_properties(aggregator-objs)
 
 # Combine lib-objs
 set(lib-objs $<TARGET_OBJECTS:aggregator-objs>)
 
 # Visible to parent directory
 set(lib-objs ${lib-objs} PARENT_SCOPE)
-
-add_subdirectory(ml)
 
 add_library(husky-lib STATIC ${lib-objs} ${ml-objs})
