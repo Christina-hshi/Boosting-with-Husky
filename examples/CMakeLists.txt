@@ -90,6 +90,11 @@ target_link_libraries(TESTC ${husky})
 target_link_libraries(TESTC ${EXTERNAL_LIB})
 set_property(TARGET TESTC PROPERTY CXX_STANDARD 14)
 
+add_executable(TESTS test_SLR.cpp)
+target_link_libraries(TESTS ${husky})
+target_link_libraries(TESTS ${EXTERNAL_LIB})
+set_property(TARGET TESTS PROPERTY CXX_STANDARD 14)
+
 # TEST_christina
 add_executable(TEST test.cpp)
 target_link_libraries(TEST ${husky})
