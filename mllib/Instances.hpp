@@ -57,25 +57,26 @@ public:
     husky::globalize(list);
   }
   template <typename AttrT>
-  auto& createAttrlist(std::string name){
+  auto& createAttrlist(std::string name)const{
     if(attr_namelist.find(name) != attr_namelist.end())
-      throw std::runtime_error("duplicated name of attribute lists");
-    attr_namelist.insert(name);
+      throw std::runtime_error("You cannot use this attribute list name. It is reserved.");
+    //attr_namelist.insert(name);
     return list.create_attrlist<AttrT>(name);
 
   }
   template <typename AttrT>
   auto& getAttrlist(std::string name)const{
-    if(attr_namelist.find(name) == attr_namelist.end())
-      throw std::runtime_error("attribute list -"+ name+" doesn't exists");
+    if(attr_namelist.find(name) != attr_namelist.end())
+      throw std::runtime_error("You cannot get a protected attribute list");
     return list.get_attrlist<AttrT>(name);
   }
-  void deleteAttrlist(std::string name){
-    if(attr_namelist.find(name) == attr_namelist.end())
-      throw std::runtime_error("attribute list -"+ name+" doesn't exists");
+  void deleteAttrlist(std::string name)const{
+    if(attr_namelist.find(name) != attr_namelist.end())
+      throw std::runtime_error("You cannot delete a protected attribute list through const function");
     list.del_attrlist(name);
-    attr_namelist.erase(name);
+    //attr_namelist.erase(name);
   }
+  
   void set_y(const Instance& instance,double y){
     ylist.set(instance,y);
   }
