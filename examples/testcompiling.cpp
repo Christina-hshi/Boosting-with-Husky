@@ -18,14 +18,15 @@ std::string vec_to_str(vec_double v) {
 void testcompiling(){
   using namespace husky;
   mllib::Instances instances;
-  husky::mllib::svReader(instances,"hdfs:///1155032497/mycpu2.tsv");
+  husky::mllib::tsvReader(instances,"/1155032497/mycpu2.tsv");
   base::log_msg("checking X y and class,key");
   list_execute(instances.enumerator(), [&instances](mllib::Instance& instance) {
     std::vector<double> here=instance.X;
 
     here.push_back(instances.get_y(instance));
     here.push_back(instances.get_class(instance));
-    base::log_msg(vec_to_str(here)+" " +instance.key);
+    here.push_back(instance.key);
+    base::log_msg(vec_to_str(here));
 
   });
   base::log_msg("...");

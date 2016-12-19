@@ -1,6 +1,7 @@
 #pragma once
 #include <mllib/Instances.hpp>
 
+//using namespace husky;
 namespace husky{
   namespace mllib{
       class Estimator{
