@@ -31,7 +31,8 @@ AggregatorChannel::~AggregatorChannel() {}
 
 void AggregatorChannel::default_setup(std::function<void()> something = nullptr) {
     do_something = something;
-    setup(Context::get_local_tid(), Context::get_global_tid(), Context::get_worker_info(), Context::get_mailbox());
+    setup(Context::get_local_tid(), Context::get_global_tid(), Context::get_worker_info(), Context::get_mailbox(),
+          Context::get_hashring());
 }
 
 // Mark these member function private to avoid being used by users
@@ -48,8 +49,7 @@ void AggregatorChannel::send(std::vector<BinStream>& bins) {
             bins[i].clear();
         }
     }
-    this->mailbox_->send_complete(this->channel_id_, this->progress_, this->worker_info_->get_local_tids(),
-                                  this->worker_info_->get_pids());
+    this->mailbox_->send_complete(this->channel_id_, this->progress_, this->hash_ring_);
 }
 
 bool AggregatorChannel::poll() { return this->mailbox_->poll(this->channel_id_, this->progress_); }

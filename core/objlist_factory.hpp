@@ -26,14 +26,15 @@ namespace husky {
 /// 3 APIs are provided
 /// create_objlist(), get_objlist(), drop_objlist()
 /// See the unittest for the usages
-class ObjListStore {
+class ObjListFactory {
    public:
     template <typename ObjT>
     static ObjList<ObjT>& create_objlist(const std::string& name = "") {
         std::string list_name = name.empty() ? objlist_name_prefix + std::to_string(default_objlist_id++) : name;
         ASSERT_MSG(objlist_map.find(list_name) == objlist_map.end(),
-                   "ObjListStore::create_objlist: ObjList name already exists");
+                   "ObjListFactory::create_objlist: ObjList name already exists");
         auto* objlist = new ObjList<ObjT>();
+        objlist->set_hash_ring(*(Context::get_hashring()));
         objlist_map.insert({list_name, objlist});
         return *objlist;
     }
@@ -41,14 +42,14 @@ class ObjListStore {
     template <typename ObjT>
     static ObjList<ObjT>& get_objlist(const std::string& name) {
         ASSERT_MSG(objlist_map.find(name) != objlist_map.end(),
-                   "ObjListStore::get_objlist: ObjList name doesn't exist");
+                   "ObjListFactory::get_objlist: ObjList name doesn't exist");
         auto* objlist = objlist_map[name];
         return *dynamic_cast<ObjList<ObjT>*>(objlist);
     }
 
     static void drop_objlist(const std::string& name) {
         ASSERT_MSG(objlist_map.find(name) != objlist_map.end(),
-                   "ObjListStore::drop_objlist: ObjList name doesn't exist");
+                   "ObjListFactory::drop_objlist: ObjList name doesn't exist");
         delete objlist_map[name];
         objlist_map.erase(name);
     }

@@ -16,9 +16,6 @@
 
 #include <string>
 
-// FIXME(Legend): This include is only used for test now, which is not self-sufficient.
-#include "glog/logging.h"
-
 namespace husky {
 namespace base {
 
@@ -26,16 +23,11 @@ enum class LOG_TYPE {
     LOG_INFO = 1,
     LOG_DEBUG = 1 << 1,
     LOG_ERROR = 1 << 2,
-    LOG_WARNING = 1 << 3,
+    LOG_WARN = 1 << 3,
 };
 
 void log_msg(const std::string& msg, LOG_TYPE type = LOG_TYPE::LOG_INFO);
-void log_msg_to_file(const std::string& msg, LOG_TYPE type, const std::string& file_name);
-
-void log_info(const std::string& msg);
-void log_debug(const std::string& msg);
-void log_error(const std::string& msg);
-void log_warning(const std::string& msg);
+void log_msg(const std::string& msg, LOG_TYPE type, const std::string& file_name);
 
 }  // namespace base
 }  // namespace husky

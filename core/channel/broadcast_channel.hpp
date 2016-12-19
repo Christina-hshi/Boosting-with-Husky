@@ -18,7 +18,7 @@
 #include <vector>
 
 #include "base/serialization.hpp"
-#include "core/accessor_store.hpp"
+#include "core/accessor_factory.hpp"
 #include "core/channel/channel_base.hpp"
 #include "core/channel/channel_source.hpp"
 #include "core/combiner.hpp"
@@ -43,7 +43,7 @@ class BroadcastChannel : public ChannelBase {
         // Make sure to invoke inc_progress_ before destructor
         if (need_leave_accessor_)
             leave_accessor();
-        AccessorStore::remove_accessor(channel_id_);
+        AccessorFactory::remove_accessor(channel_id_);
         src_ptr_->deregister_outchannel(channel_id_);
     }
 
@@ -54,8 +54,8 @@ class BroadcastChannel : public ChannelBase {
     BroadcastChannel& operator=(BroadcastChannel&&) = default;
 
     void customized_setup() override {
-        broadcast_buffer_.resize(worker_info_->get_largest_tid()+1);
-        accessor_ = AccessorStore::create_accessor<std::unordered_map<KeyT, ValueT>>(
+        broadcast_buffer_.resize(worker_info_->get_num_workers());
+        accessor_ = AccessorFactory::create_accessor<std::unordered_map<KeyT, ValueT>>(
             channel_id_, local_id_, worker_info_->get_num_local_workers());
     }
 
@@ -107,13 +107,10 @@ class BroadcastChannel : public ChannelBase {
         int start = global_id_;
         for (int i = 0; i < broadcast_buffer_.size(); ++i) {
             int dst = (start + i) % broadcast_buffer_.size();
-            if (broadcast_buffer_[dst].size() == 0)
-                continue;
             mailbox_->send(dst, channel_id_, progress_, broadcast_buffer_[dst]);
             broadcast_buffer_[dst].purge();
         }
-        this->mailbox_->send_complete(this->channel_id_, this->progress_, this->worker_info_->get_local_tids(),
-                                      this->worker_info_->get_pids());
+        mailbox_->send_complete(this->channel_id_, this->progress_, this->hash_ring_);
     }
 
     /// This method is only useful without list_execute

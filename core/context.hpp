@@ -15,100 +15,58 @@
 #pragma once
 
 #include <string>
-#include <vector>
+#include <unordered_map>
+
+#include "zmq.hpp"
 
 #include "core/config.hpp"
 #include "core/coordinator.hpp"
+#include "core/hash_ring.hpp"
 #include "core/mailbox.hpp"
 #include "core/worker_info.hpp"
 
 namespace husky {
+namespace Context {
 
-struct ContextGlobal {
-    ~ContextGlobal() {
-        // Order is important
-        local_mailboxes_.clear();
-        central_recver.reset(nullptr);
-        mailbox_event_loop.reset(nullptr);
-    }
-
-    zmq::context_t zmq_context_;
-    std::vector<std::unique_ptr<LocalMailbox>> local_mailboxes_;
-    std::unique_ptr<MailboxEventLoop> mailbox_event_loop;
-    std::unique_ptr<CentralRecver> central_recver;
-    HashRing hash_ring;
+struct Global {
     Config config;
-    Coordinator coordinator;
+    zmq::context_t* zmq_context_ptr = nullptr;
     WorkerInfo worker_info;
+    HashRing hash_ring;
+    Coordinator coordinator;
 };
 
-struct ContextLocal {
-    int global_worker_thread_id = -1;
-    int local_worker_thread_id = -1;
+struct Local {
+    int global_thread_id = -1;
+    int local_thread_id = -1;
+    LocalMailbox* mailbox = nullptr;
 };
 
-class Context {
-   public:
-    // The following are global methods
+// The following are global methods
 
-    /// \brief Initialize the mailbox sub-system
-    ///
-    /// This method can only be called after a Husky configuration is loaded.
-    /// This will initialize the local mailbox for each thread, as well as setting up the mailbox
-    /// event-loop and the mailbox central receiver.
-    static void create_mailbox_env();
+void init_global();
+void finalize_global();
 
-    static LocalMailbox* get_mailbox(int local_tid) { return global_.local_mailboxes_.at(local_tid).get(); }
+Global* get_global();
+std::string get_param(const std::string& key);
+Config* get_config();
+zmq::context_t& get_zmq_context();
+WorkerInfo* get_worker_info();
+HashRing* get_hashring();
+std::string get_recver_bind_addr();
 
-    static std::string get_recver_bind_addr() { return "tcp://*:" + std::to_string(global_.config.get_comm_port()); }
+// The following are local methods
 
-    static std::string get_param(const std::string& key) { return global_.config.get_param(key); }
+void init_local();
+void finalize_local();
+void set_local_tid(int local_tid);
+void set_global_tid(int global_tid);
+void set_mailbox(LocalMailbox* mailbox);
 
-    static MailboxEventLoop* get_mailbox_event_loop() { return global_.mailbox_event_loop.get(); }
+int get_local_tid();
+int get_global_tid();
+LocalMailbox* get_mailbox();
+Coordinator& get_coordinator();
 
-    static const HashRing& get_hash_ring() { return global_.hash_ring; }
-
-    static const WorkerInfo& get_worker_info() { return global_.worker_info; }
-
-    static int get_num_local_workers() {
-        return global_.worker_info.get_num_local_workers(global_.worker_info.get_process_id());
-    }
-
-    static int get_num_global_workers() { return global_.worker_info.get_num_workers(); }
-
-    static int get_num_workers() { return get_num_global_workers(); }
-
-    static const Config& get_config() { return global_.config; }
-
-    static int get_num_processes() { return global_.worker_info.get_num_processes(); }
-
-    static Coordinator* get_coordinator() { return &global_.coordinator; }
-
-    static int get_process_id() { return global_.worker_info.get_process_id(); }
-
-    static const void set_config(Config&& config) { global_.config = config; }
-
-    static const void set_hash_ring(HashRing&& hash_ring) { global_.hash_ring = hash_ring; }
-
-    static const void set_worker_info(WorkerInfo&& worker_info) { global_.worker_info = worker_info; }
-
-    static zmq::context_t* get_zmq_context() { return &global_.zmq_context_; }
-
-    // The following are local methods
-
-    static int get_global_tid() { return local_.global_worker_thread_id; }
-
-    static int get_local_tid() { return local_.local_worker_thread_id; }
-
-    static void set_global_tid(int global_tid) { local_.global_worker_thread_id = global_tid; }
-
-    static void set_local_tid(int local_tid) { local_.local_worker_thread_id = local_tid; }
-
-    static LocalMailbox* get_mailbox() { return get_mailbox(local_.local_worker_thread_id); }
-
-   protected:
-    static ContextGlobal global_;
-    static thread_local ContextLocal local_;
-};
-
+}  // namespace Context
 }  // namespace husky

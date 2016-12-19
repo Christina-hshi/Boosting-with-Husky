@@ -13,13 +13,15 @@
 # limitations under the License.
 
 
-include_directories(${PROJECT_SOURCE_DIR} ${EXTERNAL_INCLUDE})
+include_directories(${PROJECT_SOURCE_DIR} ${Boost_INCLUDE_DIRS})
 
 set(output_cpps outputformat_base.cpp)
 
 if(MONGOCLIENT_FOUND)
-    list(APPEND output_cpps mongodb_outputformat.cpp)
+    include_directories(${MONGOCLIENT_INCLUDE_DIR})
+    add_definitions(-DWITH_MONGODB)
+    set(output_cpps ${output_cpps} mongodb_outputformat.cpp)
 endif(MONGOCLIENT_FOUND)
 
 add_library(output-objs OBJECT ${output_cpps})
-husky_default_properties(output-objs)
+set_property(TARGET output-objs PROPERTY CXX_STANDARD 14)

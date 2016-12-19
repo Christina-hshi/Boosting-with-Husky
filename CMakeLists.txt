@@ -13,58 +13,37 @@
 # limitations under the License.
 
 
-project(husky)
 cmake_minimum_required(VERSION 3.0.2)
 
-# CMake Options
 set(CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_FLAGS_DEBUG "-g")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3 -w")
+
+set(dep_DIR ${PROJECT_SOURCE_DIR})
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
-if(CMAKE_COMPILER_IS_GNUCXX)
-    set(CMAKE_CXX_FLAGS_DEBUG "-g")
-    set(CMAKE_CXX_FLAGS_RELEASE "-O3 -w")
-    set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "-Wno-deprecated-declarations")
-endif()
 
-# Dependencies
-include(cmake/dep.cmake)
-include(cmake/utils.cmake)
-include(cmake/external.cmake)
-
-# Boost Libraries
+find_package(dep)
 find_package(Threads)
-find_package(Boost 1.58.0 COMPONENTS system filesystem regex thread program_options date_time chrono)
-
-# External Includes
-set(EXTERNAL_INCLUDE ${Boost_INCLUDE_DIRS} ${ZMQ_INCLUDE_DIR} ${GLOG_INCLUDE})
+find_package(Boost 1.58.0 COMPONENTS system filesystem regex thread program_options)
 
 # External Libraries
-set(EXTERNAL_LIB ${ZMQ_LIBRARY} ${TCMALLOC_LIBRARY} ${CMAKE_THREAD_LIBS_INIT} ${Boost_LIBRARIES} ${GLOG_LIBRARY})
+set(EXTERNAL_LIB ${ZMQ_LIBRARY} ${TCMALLOC_LIBRARY} ${CMAKE_THREAD_LIBS_INIT} ${Boost_LIBRARIES})
 
 # libhdfs3
 if(LIBHDFS3_FOUND)
-    list(APPEND EXTERNAL_INCLUDE ${LIBHDFS3_INCLUDE_DIR})
-    list(APPEND EXTERNAL_LIB ${LIBHDFS3_LIBRARY})
-    add_definitions(-DWITH_HDFS)
+    set(EXTERNAL_LIB ${EXTERNAL_LIB} ${LIBHDFS3_LIBRARY})
 endif(LIBHDFS3_FOUND)
 
 # MongoDB
 if(MONGOCLIENT_FOUND)
-    list(APPEND EXTERNAL_INCLUDE ${MONGOCLIENT_INCLUDE_DIR})
-    list(APPEND EXTERNAL_LIB ${RT_LIBRARY} ${MONGOCLIENT_LIBRARY})
-    add_definitions(-DWITH_MONGODB)
+    set(EXTERNAL_LIB ${EXTERNAL_LIB} ${RT_LIBRARY} ${MONGOCLIENT_LIBRARY})
 endif(MONGOCLIENT_FOUND)
 
 # Thrift
 if(THRIFT_FOUND)
-    list(APPEND EXTERNAL_INCLUDE ${THRIFT_INCLUDE_DIR})
-    list(APPEND EXTERNAL_LIB ${THRIFT_LIBRARY})
-    add_definitions(-DWITH_THRIFT)
+    set(EXTERNAL_LIB ${EXTERNAL_LIB} ${THRIFT_LIBRARY})
 endif(THRIFT_FOUND)
-
-if(WIN32)
-    list(APPEND EXTERNAL_LIB wsock32 ws2_32)
-endif()
 
 add_subdirectory(base)
 add_subdirectory(core)

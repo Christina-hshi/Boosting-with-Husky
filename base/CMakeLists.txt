@@ -13,7 +13,7 @@
 # limitations under the License.
 
 
-include_directories(${PROJECT_SOURCE_DIR} ${EXTERNAL_INCLUDE})
+include_directories(${PROJECT_SOURCE_DIR} ${Boost_INCLUDE_DIRS})
 
 add_library(base-objs OBJECT
     counter_barrier.cpp
@@ -23,6 +23,6 @@ add_library(base-objs OBJECT
     serialization.cpp
     session_local.cpp
     thread_support.cpp)
-husky_default_properties(base-objs)
+set_property(TARGET base-objs PROPERTY CXX_STANDARD 14)
 
 add_library(husky-base STATIC $<TARGET_OBJECTS:base-objs>)

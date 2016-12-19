@@ -18,7 +18,6 @@
 
 #include <string>
 
-#include "base/exception.hpp"
 #include "core/utils.hpp"
 
 namespace husky {
@@ -105,13 +104,7 @@ void HDFSManager::flush(const std::string& url, const int& worker_id) {
         return;
 
     auto file = opened_files[worker_id][url];
-    int num_retries = 3;
-    while (num_retries--) {
-        int rc = hdfsFlush(fs_, file);
-        if (rc == 0)
-            return;
-    }
-    throw base::HuskyException("Failed to flush to HDFS");
+    hdfsFlush(fs_, file);
 }
 
 void HDFSManager::flush_all_files() {

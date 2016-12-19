@@ -11,14 +11,3 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-
-include_directories(${PROJECT_SOURCE_DIR} ${Boost_INCLUDE_DIRS})
-
-add_library(channel-objs OBJECT
-    aggregator_channel.cpp
-    channel_base.cpp
-    channel_destination.cpp
-    channel_factory_base.cpp
-    channel_source.cpp)
-set_property(TARGET channel-objs PROPERTY CXX_STANDARD 14)

@@ -15,90 +15,58 @@
 #pragma once
 
 #include <algorithm>
+#include <utility>
+#include <vector>
 
-#include "core/executor.hpp"
-#include "core/objlist.hpp"
-#include "core/utils.hpp"
-#include "lib/aggregator.hpp"
-#include "lib/aggregator_factory.hpp"
-#include "lib/vector.hpp"
+#include "lib/ml/vector_linalg.hpp"
 
 namespace husky {
 namespace lib {
 namespace ml {
 
+typedef std::vector<double> vec_double;
+typedef std::vector<std::pair<int, double>> vec_sp;
+
 // get max absolute value
-template <typename T, bool is_sparse>
-void set_max(Vector<T, false>& va, const Vector<T, is_sparse>& vb) {
-    ASSERT_MSG(va.get_feature_num() >= vb.get_feature_num(), "Range does not match");
-    for (auto it = vb.begin_feaval(); it != vb.end_feaval(); ++it) {
-        const auto& entry = *it;
-        va[entry.fea] = std::max(va[entry.fea], std::abs(entry.val));
+void set_max(vec_double& va, const vec_sp& vb) {
+    int n = vb.size();
+    for (int i = 0; i < n; i++) {
+        va[vb[i].first] = std::max(va[vb[i].first], std::abs(vb[i].second));
     }
 }
-
-// overload operator/= and operator*= for scaling
-template <typename T>
-void operator/=(Vector<T, false>& va, const Vector<T, false>& vb) {
-    for (auto it = va.begin_feaval(); it != va.end_feaval(); ++it) {
-        auto entry = *it;
-        if (vb[entry.fea] != 0) {
-            entry.val /= vb[entry.fea];
-        }
-    }
-}
-template <typename T>
-void operator/=(Vector<T, true>& va, const Vector<T, false>& vb) {
-    for (auto it = va.begin_feaval(); it != va.end_feaval(); ++it) {
-        auto& entry = *it;
-        if (vb[entry.fea] != 0) {
-            entry.val /= vb[entry.fea];
-        }
-    }
-}
-
-template <typename T>
-void operator*=(Vector<T, true>& va, const Vector<T, false>& vb) {
-    for (auto it = va.begin_feaval(); it != va.end_feaval(); ++it) {
-        auto& entry = *it;
-        if (vb[entry.fea] != 0) {
-            entry.val *= vb[entry.fea];
-        }
-    }
-}
-template <typename T>
-void operator*=(Vector<T, false>& va, const Vector<T, false>& vb) {
-    for (auto it = va.begin_feaval(); it != va.end_feaval(); ++it) {
-        auto entry = *it;
-        if (vb[entry.fea] != 0) {
-            entry.val *= vb[entry.fea];
-        }
-    }
+void set_max(vec_double& va, const vec_double& vb) {
+    int n = vb.size();
+    for (int i = 0; i < n; i++)
+        va[i] = std::max(va[i], std::abs(vb[i]));
 }
 
 // scaling each element in vector to [-1, 1]
-template <typename FeatureT, typename LabelT, bool is_sparse>
+template <typename FeatureT = vec_sp, typename LabelT = double,
+          template <typename, typename> typename DataT = FeatureLabelBase>
 class LinearScaler {
-    typedef LabeledPointHObj<FeatureT, LabelT, is_sparse> ObjT;
+    typedef DataT<FeatureT, LabelT> ObjT;
     typedef ObjList<ObjT> ObjL;
-    typedef Vector<FeatureT, false> VecT;
 
    public:
-    explicit LinearScaler(int _num_features) : num_features_(_num_features) {
+    explicit LinearScaler(int);
+    LinearScaler(std::function<FeatureT&(ObjT&)> _use_X, std::function<LabelT&(ObjT&)> _use_y, int _num_features)
+        : use_X_(_use_X), use_y_(_use_y), num_features_(_num_features) {
         if (_num_features > 0)
-            max_X_ = VecT(_num_features, 0.0);
+            max_X_ = vec_double(_num_features + 1, 0.0);
     }
 
     void fit(ObjL& data) {
         ASSERT_MSG(num_features_ > 0, "Non-positive number of parameters.");
-        lib::Aggregator<VecT> max_X_agg(max_X_, [](VecT& va, const VecT& vb) { set_max(va, vb); },
-                                        [this](VecT& va) { va = VecT(this->num_features_, 0.0); });
-        lib::Aggregator<LabelT> max_y_agg(max_y_, [](LabelT& a, const LabelT& b) { a = std::max(a, std::abs(b)); });
+        lib::Aggregator<vec_double> max_X_agg(
+            max_X_, [](vec_double& va, const vec_double& vb) { set_max(va, vb); },
+            [this](vec_double& va) { va = vec_double(this->num_features_ + 1, 0.0); });
+        lib::Aggregator<double> max_y_agg(max_y_, [](double& a, const double& b) { a = std::max(a, std::abs(b)); });
         auto& ch = lib::AggregatorFactory::get_channel();
 
         list_execute(data, {}, {&ch}, [&](ObjT& this_obj) {
-            max_X_agg.update_any([&, this](VecT& va) { set_max(va, this_obj.x); });
-            max_y_agg.update(this_obj.y);
+            FeatureT& X = use_X_(this_obj);
+            max_X_agg.update_any([&, this](vec_double& va) { set_max(va, this->use_X_(this_obj)); });
+            max_y_agg.update(use_y_(this_obj));
         });
 
         max_X_ = max_X_agg.get_value();
@@ -113,9 +81,11 @@ class LinearScaler {
 
     void transform(ObjL& data) {
         list_execute(data, [&](ObjT& this_obj) {
-            this_obj.x /= max_X_;
+            FeatureT& X = use_X_(this_obj);
+            LabelT& y = use_y_(this_obj);
+            X /= max_X_;
             if (max_y_ > 0)
-                this_obj.y /= max_y_;
+                y /= max_y_;
         });
     }
 
@@ -138,9 +108,11 @@ class LinearScaler {
 
     void inverse_transform(ObjL& data) {
         list_execute(data, [&](ObjT& this_obj) {
-            this_obj.x *= max_X_;
+            FeatureT& X = use_X_(this_obj);
+            LabelT& y = use_y_(this_obj);
+            X *= max_X_;
             if (max_y_ > 0)
-                this_obj.y *= max_y_;
+                y *= max_y_;
         });
     }
 
@@ -150,14 +122,22 @@ class LinearScaler {
         inverse_transform(args...);
     }
 
-    Vector<FeatureT, false> get_max_X() { return this->max_X_; }
-    LabelT get_max_y() { return this->max_y_; }
+    vec_double get_max_X() { return this->max_X_; }
+    double get_max_y() { return this->max_y_; }
 
    protected:
     int num_features_ = -1;
-    VecT max_X_;
-    LabelT max_y_ = 0;
+    vec_double max_X_;
+    double max_y_ = 0;
+    std::function<FeatureT&(ObjT&)> use_X_ = nullptr;
+    std::function<LabelT&(ObjT&)> use_y_ = nullptr;
 };
+
+template <>
+LinearScaler<vec_sp, double, FeatureLabelBase>::LinearScaler(int _num_features)
+    : LinearScaler([](FeatureLabelBase<vec_sp, double>& this_obj) -> vec_sp& { return this_obj.use_feature(); },
+                   [](FeatureLabelBase<vec_sp, double>& this_obj) -> double& { return this_obj.use_label(); },
+                   _num_features) {}
 
 }  // namespace ml
 }  // namespace lib

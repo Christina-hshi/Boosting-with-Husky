@@ -13,9 +13,10 @@
 # limitations under the License.
 
 
-include_directories(${PROJECT_SOURCE_DIR} ${EXTERNAL_INCLUDE})
+include_directories(${PROJECT_SOURCE_DIR} ${Boost_INCLUDE_DIRS})
 
 set(input_cpps inputformat_helper.cpp
+    inputformat_factory.cpp
     line_inputformat.cpp
     chunk_inputformat.cpp
     separator_inputformat.cpp
@@ -26,21 +27,23 @@ set(input_cpps inputformat_helper.cpp
     binary_inputformat.cpp)
 
 if(LIBHDFS3_FOUND)
-    list(APPEND input_cpps hdfs_file_splitter.cpp hdfs_binary_inputformat.cpp)
+    include_directories(${LIBHDFS3_INCLUDE_DIR})
+    add_definitions(-DWITH_HDFS)
+    set(input_cpps ${input_cpps} hdfs_file_splitter.cpp hdfs_binary_inputformat.cpp)
 endif(LIBHDFS3_FOUND)
 
 if(MONGOCLIENT_FOUND)
-    list(APPEND input_cpps mongodb_split.cpp mongodb_inputformat.cpp)
+    include_directories(${MONGOCLIENT_INCLUDE_DIR})
+    add_definitions(-DWITH_MONGODB)
+    set(input_cpps ${input_cpps} mongodb_split.cpp mongodb_inputformat.cpp)
 endif(MONGOCLIENT_FOUND)
 
 if(THRIFT_FOUND)
-    list(APPEND input_cpps flume_connector/flume_types.cpp
-        flume_connector/flume_constants.cpp
-        flume_connector/ThriftSourceProtocol.cpp
-        flume_inputformat.cpp)
+    include_directories(${THRIFT_INCLUDE_DIR})
+    add_definitions(-DWITH_THRIFT)
+    add_subdirectory(flume_connector)
+    set(input_cpps ${input_cpps} flume_connector/flume_types.cpp flume_connector/flume_constants.cpp flume_connector/ThriftSourceProtocol.cpp flume_inputformat.cpp)
 endif(THRIFT_FOUND)
 
-list(APPEND input_cpps inputformat_store.cpp)
-
 add_library(input-objs OBJECT ${input_cpps})
-husky_default_properties(input-objs)
+set_property(TARGET input-objs PROPERTY CXX_STANDARD 14)

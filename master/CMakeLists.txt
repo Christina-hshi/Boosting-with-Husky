@@ -13,16 +13,19 @@
 # limitations under the License.
 
 
-include_directories(${PROJECT_SOURCE_DIR} ${EXTERNAL_INCLUDE})
+include_directories(${PROJECT_SOURCE_DIR} ${Boost_INCLUDE_DIRS})
 
-set(master_plugins nfs_assigner.cpp progress_tracker.cpp nfs_binary_assigner.cpp)
+set(master_plugins mongodb_assigner.cpp nfs_assigner.cpp progress_tracker.cpp nfs_binary_assigner.cpp)
 
 if(LIBHDFS3_FOUND)
-    list(APPEND master_plugins hdfs_assigner.cpp hdfs_binary_assigner.cpp)
+    include_directories(${LIBHDFS3_INCLUDE_DIR})
+    add_definitions(-DWITH_HDFS)
+    set(master_plugins ${master_plugins} hdfs_assigner.cpp hdfs_binary_assigner.cpp)
 endif(LIBHDFS3_FOUND)
 
 if(MONGOCLIENT_FOUND)
-    list(APPEND master_plugins mongodb_assigner.cpp)
+    include_directories(${MONGOCLIENT_INCLUDE_DIR})
+    add_definitions(-DWITH_MONGODB)
 endif(MONGOCLIENT_FOUND)
 
 set(husky husky-lib husky-io husky-core husky-base)
@@ -31,7 +34,4 @@ set(husky husky-lib husky-io husky-core husky-base)
 add_executable(Master master.cpp ${master_plugins})
 target_link_libraries(Master ${husky})
 target_link_libraries(Master ${EXTERNAL_LIB})
-if(WIN32)
-    set_target_properties(Master PROPERTIES COMPILER_FLAGS "/EHsc")
-endif()
-husky_default_properties(Master)
+set_property(TARGET Master PROPERTY CXX_STANDARD 14)

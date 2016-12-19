@@ -12,7 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-include_directories(${PROJECT_SOURCE_DIR} ${EXTERNAL_INCLUDE})
+include_directories(${PROJECT_SOURCE_DIR} ${Boost_INCLUDE_DIRS})
+
+if(LIBHDFS3_FOUND)
+    include_directories(${LIBHDFS3_INCLUDE_DIR})
+    add_definitions(-DWITH_HDFS)
+endif(LIBHDFS3_FOUND)
+
+if(MONGOCLIENT_FOUND)
+    include_directories(${MONGOCLIENT_INCLUDE_DIR})
+    add_definitions(-DWITH_MONGODB)
+endif(MONGOCLIENT_FOUND)
 
 set(husky husky-lib husky-io husky-core husky-base) 
 
@@ -22,4 +32,4 @@ set(husky husky-lib husky-io husky-core husky-base)
 add_executable(BenchPageRank pagerank.cpp)
 target_link_libraries(BenchPageRank ${husky})
 target_link_libraries(BenchPageRank ${EXTERNAL_LIB})
-husky_default_properties(BenchPageRank)
+set_property(TARGET BenchPageRank PROPERTY CXX_STANDARD 14)

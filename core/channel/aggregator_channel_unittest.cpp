@@ -39,12 +39,15 @@ TEST_F(TestAggregatorChannel, Create) {
 
     // WorkerInfo Setup
     WorkerInfo workerinfo;
+    workerinfo.add_proc(0, "master");
     workerinfo.add_worker(0, 0, 0);
-    workerinfo.set_process_id(0);
+    workerinfo.set_num_processes(1);
+    workerinfo.set_num_workers(1);
+    workerinfo.set_proc_id(0);
 
     // BroadcastChannel
     AggregatorChannel agg_channel;
-    agg_channel.setup(0, 0, workerinfo, &mailbox);
+    agg_channel.setup(0, 0, &workerinfo, &mailbox, &hashring);
 }
 
 TEST_F(TestAggregatorChannel, Aggregate) {
@@ -62,12 +65,15 @@ TEST_F(TestAggregatorChannel, Aggregate) {
 
     // WorkerInfo Setup
     WorkerInfo workerinfo;
+    workerinfo.add_proc(0, "master");
     workerinfo.add_worker(0, 0, 0);
-    workerinfo.set_process_id(0);
+    workerinfo.set_num_processes(1);
+    workerinfo.set_num_workers(1);
+    workerinfo.set_proc_id(0);
 
     // BroadcastChannel
     AggregatorChannel agg_channel;
-    agg_channel.setup(0, 0, workerinfo, &mailbox);
+    agg_channel.setup(0, 0, &workerinfo, &mailbox, &hashring);
 
     std::vector<BinStream> bins(1);
     bins.front() << '1' << 2 << 3.f << 4.0 << 5ll << std::string("Hello World");
@@ -117,13 +123,16 @@ TEST_F(TestAggregatorChannel, MultiThread) {
         threads.push_back(new std::thread([&, id = i, mailbox = mailboxes[i] ]() {
             // WorkerInfo Setup
             WorkerInfo workerinfo;
+            workerinfo.add_proc(0, "localhost");
             for (int j = 0; j < NUM_THREADS; j++)
                 workerinfo.add_worker(0, j, j);
-            workerinfo.set_process_id(0);
+            workerinfo.set_num_processes(1);
+            workerinfo.set_num_workers(NUM_THREADS);
+            workerinfo.set_proc_id(0);
 
             // BroadcastChannel
             AggregatorChannel agg_channel;
-            agg_channel.setup(id, id, workerinfo, mailbox);
+            agg_channel.setup(id, id, &workerinfo, mailbox, &hashring);
 
             std::vector<BinStream> bins(NUM_THREADS);
             for (int j = 0; j < NUM_THREADS; j++) {

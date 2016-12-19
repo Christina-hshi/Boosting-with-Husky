@@ -20,7 +20,7 @@
 
 #include "base/log.hpp"
 #include "core/engine.hpp"
-#include "io/input/inputformat_store.hpp"
+#include "io/input/inputformat_factory.hpp"
 #include "lib/aggregator_factory.hpp"
 
 namespace husky {
@@ -43,7 +43,7 @@ class Word {
 
 void aggregator() {
     auto id = Context::get_global_tid();  // [0, number of threads globally)
-    {                                     // 1. an easy example
+    {  // 1. an easy example
         Aggregator<int> agg;              // creation
         agg.update(id);                   // aggregate
         AggregatorFactory::sync();        // synchronize manually
@@ -62,11 +62,11 @@ void aggregator() {
             });
         auto& ac = AggregatorFactory::get_channel();
 
-        auto& infmt = husky::io::InputFormatStore::create_line_inputformat();
+        auto& infmt = husky::io::InputFormatFactory::create_line_inputformat();
         infmt.set_input(husky::Context::get_param("input"));
 
-        auto& word_list = ObjListStore::create_objlist<Word>();
-        auto& ch = ChannelStore::create_push_combined_channel<int, SumCombiner<int>>(infmt, word_list);
+        auto& word_list = ObjListFactory::create_objlist<Word>();
+        auto& ch = ChannelFactory::create_push_combined_channel<int, SumCombiner<int>>(infmt, word_list);
 
         load(infmt, {&ch}, [&](boost::string_ref& chunk) {
             if (chunk.size() == 0)

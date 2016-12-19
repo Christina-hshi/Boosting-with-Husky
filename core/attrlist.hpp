@@ -71,7 +71,7 @@ class AttrList : public AttrListBase {
             throw base::HuskyException("AttrList<T>::get error: index out of range");
         }
         if (idx >= data_.size()) {
-            data_.resize(objlist_size, default_val_);
+            data_.resize(objlist_size);
         }
         return data_[idx];
     }
@@ -92,7 +92,7 @@ class AttrList : public AttrListBase {
             throw base::HuskyException("AttrList<T>::set error: index out of range");
         }
         if (idx >= data_.size()) {
-            data_.resize(objlist_size, default_val_);
+            data_.resize(objlist_size);
         }
         data_[idx] = std::move(attr);
     }
@@ -103,7 +103,7 @@ class AttrList : public AttrListBase {
             throw base::HuskyException("AttrList<T>::set error: index out of range");
         }
         if (idx >= data_.size()) {
-            data_.resize(objlist_size, default_val_);
+            data_.resize(objlist_size);
         }
         data_[idx] = attr;
     }
@@ -122,12 +122,12 @@ class AttrList : public AttrListBase {
     AttrList() = default;
     virtual ~AttrList() = default;
 
-    AttrList(ObjListData<ObjT>* objlist_data_ptr, const AttrT& default_attr)
-        : master_data_ptr_(objlist_data_ptr), default_val_(default_attr) {
-        data_.resize(master_data_ptr_->get_size(), default_val_);
+    explicit AttrList(ObjListData<ObjT>* objlist_data_ptr) {
+        master_data_ptr_ = objlist_data_ptr;
+        data_.resize(master_data_ptr_->get_size());
     }
 
-    inline void resize(const size_t size) override { data_.resize(size, default_val_); }
+    inline void resize(const size_t size) override { data_.resize(size); }
 
     // Reorder the list according to a permutaion
     inline void reorder(std::vector<int>& order) override { reorder(data_, order); }
@@ -160,7 +160,7 @@ class AttrList : public AttrListBase {
             // if dest == -1 or order[dest] == -1
             order[src] = -1;
             src = 0;
-            while (src < order.size() && order[src] == -1) {
+            while (order[src] == -1 && src < order.size()) {
                 ++src;
             }
         } while (src < order.size());
@@ -168,7 +168,7 @@ class AttrList : public AttrListBase {
 
     void migrate(BinStream& bin, const size_t idx) override {
         if (idx >= data_.size()) {
-            data_.resize(master_data_ptr_->get_vector_size(), default_val_);
+            data_.resize(master_data_ptr_->get_vector_size());
         }
         bin << data_[idx];
     }
@@ -180,7 +180,6 @@ class AttrList : public AttrListBase {
     }
 
     std::vector<AttrT> data_;
-    AttrT default_val_;
     ObjListData<ObjT>* master_data_ptr_;
 
     template <typename T>

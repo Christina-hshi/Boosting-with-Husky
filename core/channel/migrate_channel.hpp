@@ -47,7 +47,7 @@ class MigrateChannel : public ObjList2ObjListChannel<ObjT, ObjT> {
     MigrateChannel(MigrateChannel&&) = default;
     MigrateChannel& operator=(MigrateChannel&&) = default;
 
-    void customized_setup() override { migrate_buffer_.resize(this->worker_info_->get_largest_tid()+1); }
+    void customized_setup() override { migrate_buffer_.resize(this->worker_info_->get_num_workers()); }
 
     void migrate(ObjT& obj, int dst_thread_id) {
         auto idx = this->src_ptr_->delete_object(&obj);
@@ -67,13 +67,10 @@ class MigrateChannel : public ObjList2ObjListChannel<ObjT, ObjT> {
         int start = this->global_id_;
         for (int i = 0; i < migrate_buffer_.size(); ++i) {
             int dst = (start + i) % migrate_buffer_.size();
-            if (migrate_buffer_[dst].size() == 0)
-                continue;
             this->mailbox_->send(dst, this->channel_id_, this->progress_, migrate_buffer_[dst]);
             migrate_buffer_[dst].purge();
         }
-        this->mailbox_->send_complete(this->channel_id_, this->progress_, this->worker_info_->get_local_tids(),
-                                      this->worker_info_->get_pids());
+        this->mailbox_->send_complete(this->channel_id_, this->progress_, this->hash_ring_);
     }
 
     /// This method is only useful without list_execute
@@ -99,8 +96,6 @@ class MigrateChannel : public ObjList2ObjListChannel<ObjT, ObjT> {
             auto idx = this->dst_ptr_->add_object(std::move(obj));
             this->dst_ptr_->process_attribute(bin_push, idx);
         }
-        if (this->dst_ptr_->get_num_del() * 2 > this->dst_ptr_->get_vector_size())
-            this->dst_ptr_->deletion_finalize();
     }
 
     std::vector<BinStream> migrate_buffer_;

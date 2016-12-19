@@ -27,7 +27,7 @@
 #include "core/hash_ring.hpp"
 #include "core/mailbox.hpp"
 #include "core/objlist.hpp"
-#include "core/shuffle_combiner_store.hpp"
+#include "core/shuffle_combiner_factory.hpp"
 #include "core/worker_info.hpp"
 
 namespace husky {
@@ -43,7 +43,7 @@ class PushCombinedChannel : public Source2ObjListChannel<DstObjT> {
     }
 
     ~PushCombinedChannel() override {
-        ShuffleCombinerStore::remove_shuffle_combiner<typename DstObjT::KeyT, MsgT>(this->channel_id_);
+        ShuffleCombinerFactory::remove_shuffle_combiner(this->channel_id_);
 
         this->src_ptr_->deregister_outchannel(this->channel_id_);
         this->dst_ptr_->deregister_inchannel(this->channel_id_);
@@ -57,19 +57,17 @@ class PushCombinedChannel : public Source2ObjListChannel<DstObjT> {
 
     void customized_setup() override {
         // Initialize send_buffer_
-        // use get_largest_tid() instead of get_num_workers()
-        // sine we may only use a subset of worker
-        send_buffer_.resize(this->worker_info_->get_largest_tid()+1);
+        send_buffer_.resize(this->worker_info_->get_num_workers());
         // Create shuffle_combiner_
         // TODO(yuzhen): Only support sortcombine, hashcombine can be added using enableif
-        shuffle_combiner_ = ShuffleCombinerStore::create_shuffle_combiner<typename DstObjT::KeyT, MsgT>(
+        shuffle_combiner_ = ShuffleCombinerFactory::create_shuffle_combiner<typename DstObjT::KeyT, MsgT>(
             this->channel_id_, this->local_id_, this->worker_info_->get_num_local_workers(),
-            this->worker_info_->get_largest_tid()+1);
+            this->worker_info_->get_num_workers());
     }
 
     void push(const MsgT& msg, const typename DstObjT::KeyT& key) {
         // shuffle_combiner_.init();  // Already move init() to create_shuffle_combiner_()
-        int dst_worker_id = this->worker_info_->get_hash_ring()->hash_lookup(key);
+        int dst_worker_id = this->hash_ring_->hash_lookup(key);
         auto& buffer = (*shuffle_combiner_)[this->local_id_].storage(dst_worker_id);
         back_combine<CombineT>(buffer, key, msg);
     }
@@ -109,13 +107,10 @@ class PushCombinedChannel : public Source2ObjListChannel<DstObjT> {
         int start = this->global_id_;
         for (int i = 0; i < send_buffer_.size(); ++i) {
             int dst = (start + i) % send_buffer_.size();
-            if (send_buffer_[dst].size() == 0)
-                continue;
             this->mailbox_->send(dst, this->channel_id_, this->progress_, send_buffer_[dst]);
             send_buffer_[dst].purge();
         }
-        this->mailbox_->send_complete(this->channel_id_, this->progress_, this->worker_info_->get_local_tids(),
-                                      this->worker_info_->get_pids());
+        this->mailbox_->send_complete(this->channel_id_, this->progress_, this->hash_ring_);
     }
 
     /// This method is only useful without list_execute
@@ -163,34 +158,44 @@ class PushCombinedChannel : public Source2ObjListChannel<DstObjT> {
 
     void shuffle_combine() {
         // step 1: shuffle combine
-        auto& self_shuffle_combiner = (*shuffle_combiner_)[this->local_id_];
-        self_shuffle_combiner.send_shuffler_buffer();
-        for (int iter = 0; iter < this->worker_info_->get_num_local_workers() - 1; iter++) {
-            int next_worker = self_shuffle_combiner.access_next();
-            auto& peer_shuffle_combiner = (*shuffle_combiner_)[next_worker];
-            for (int i = this->local_id_; i < this->worker_info_->get_largest_tid()+1;
-                 i += this->worker_info_->get_num_local_workers()) {
-                // combining the i-th buffer
-                auto& self_buffer = self_shuffle_combiner.storage(i);
-                auto& peer_buffer = peer_shuffle_combiner.storage(i);
+        for (int i = 0; i < this->worker_info_->get_num_workers(); i++)
+            (*shuffle_combiner_)[this->local_id_].commit(i);
+
+        for (int i = 0; i < this->worker_info_->get_num_workers(); i++) {
+            if (i % this->worker_info_->get_num_local_workers() != this->local_id_)
+                continue;
+
+            // assume I'm now combining the i-th buffer
+            auto& self_buffer = (*shuffle_combiner_)[this->local_id_].access(i);
+
+            // Collect messages (of the i-th buffer) from all machines
+            unsigned int seed = time(NULL);
+            int base = rand_r(&seed);
+            for (int j = 0; j < this->worker_info_->get_num_local_workers(); j++) {
+                if (j == this->local_id_)
+                    continue;
+
+                auto& peer_buffer = (*shuffle_combiner_)[j].access(i);
                 self_buffer.insert(self_buffer.end(), peer_buffer.begin(), peer_buffer.end());
                 peer_buffer.clear();
+                (*shuffle_combiner_)[j].leave(i);
             }
-        }
-        for (int i = this->local_id_; i < this->worker_info_->get_largest_tid()+1;
-             i += this->worker_info_->get_num_local_workers()) {
-            auto& self_buffer = self_shuffle_combiner.storage(i);
+
             combine_single<CombineT>(self_buffer);
         }
+
         // step 2: serialize combine buffer
-        for (int i = this->local_id_; i < this->worker_info_->get_largest_tid()+1;
-             i += this->worker_info_->get_num_local_workers()) {
-            auto& combine_buffer = self_shuffle_combiner.storage(i);
+        for (int i = 0; i < this->worker_info_->get_num_workers(); i++) {
+            if (i % this->worker_info_->get_num_local_workers() != this->local_id_)
+                continue;
+
+            auto& combine_buffer = (*shuffle_combiner_)[this->local_id_].access(i);
             for (int k = 0; k < combine_buffer.size(); k++) {
                 send_buffer_[i] << combine_buffer[k].first;
                 send_buffer_[i] << combine_buffer[k].second;
             }
             combine_buffer.clear();
+            (*shuffle_combiner_)[this->local_id_].leave(i);
         }
     }
 

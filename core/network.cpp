@@ -14,42 +14,60 @@
 
 #include "core/network.hpp"
 
+#ifdef _WIN32
+#error "The networking support for Windows is not ready yet."
+#endif
+
+#include <arpa/inet.h>
+#include <ifaddrs.h>
+#include <netdb.h>
+#include <netinet/in.h>
+#include <sys/param.h>
+
 #include <cstring>
 #include <set>
 #include <string>
 
 #ifdef __linux__
-#include <ifaddrs.h>
+#include <unistd.h>
 #endif
-
-#include "boost/asio.hpp"
+#ifdef _WIN32
+#include <Winsock2.h>
+#endif
 
 #include "core/utils.hpp"
 
 namespace husky {
 
-std::string get_hostname() { return boost::asio::ip::host_name(); }
-
-std::set<std::string> get_ips(const std::string& name) {
-    std::set<std::string> ips;
-
-    boost::asio::io_service io_service;
-    boost::asio::ip::tcp::resolver resolver(io_service);
-    boost::asio::ip::tcp::resolver::query query(name, "");
-    boost::asio::ip::tcp::resolver::iterator iter = resolver.resolve(query);
-    boost::asio::ip::tcp::resolver::iterator end;
-    while (iter != end) {
-        ips.insert(iter->endpoint().address().to_string());
-        iter++;
-    }
-
-    return ips;
-}
-
-std::set<std::string> get_local_ips() {
-    std::set<std::string> ips;
+std::string get_hostname() {
+    char hostname[1024];
+    memset(hostname, 0, sizeof(hostname));
 
 #ifdef __linux__
+    gethostname(hostname, 1024);
+#endif
+
+#ifdef _WIN32
+    WSADATA wsaData;
+    WSAStartup(MAKEWORD(2, 2), &wsaData);
+    gethostname(hostname, 1024);
+    WSACleanup();
+#endif
+
+    return std::string(hostname);
+}
+
+std::string ns_lookup(const std::string& name) {
+    hostent* record = gethostbyname(name.c_str());
+    ASSERT_MSG(record != NULL, (name + " cannot be resolved").c_str());
+    in_addr* address = reinterpret_cast<in_addr*>(record->h_addr);
+    std::string ip_address = inet_ntoa(*address);
+    return ip_address;
+}
+
+std::set<std::string> get_self_ips() {
+    std::set<std::string> ips;
+
     struct ifaddrs* ifap;
     getifaddrs(&ifap);
 
@@ -63,28 +81,15 @@ std::set<std::string> get_local_ips() {
             ips.insert(addr);
         }
     }
-#endif
 
-#ifdef _WIN32
-    struct hostent* phe = gethostbyname(get_hostname().c_str());
-    for (int i = 0; phe->h_addr_list[i] != 0; i++) {
-        struct in_addr addr;
-        memcpy(&addr, phe->h_addr_list[i], sizeof(struct inaddr));
-        ips.insert(inet_ntoa(addr));
-    }
-#endif
-
+    freeifaddrs(ifap);
     return ips;
 }
 
-template <typename T>
-bool has_overlap(const std::set<T>& s1, const std::set<T>& s2) {
-    for (auto& x : s1)
-        if (s2.find(x) != s2.end())
-            return true;
-    return false;
+bool is_local(const std::string& name) {
+    auto ip = ns_lookup(name);
+    auto self_ips = get_self_ips();
+    return self_ips.find(ip) != self_ips.end();
 }
-
-bool is_local(const std::string& name) { return has_overlap(get_local_ips(), get_ips(name)); }
 
 }  // namespace husky

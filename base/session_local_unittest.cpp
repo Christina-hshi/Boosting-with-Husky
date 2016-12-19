@@ -24,7 +24,6 @@ class TestSessionLocal : public testing::Test {
 TEST_F(TestSessionLocal, Register) {
     SessionLocal::get_initializers().clear();
     SessionLocal::get_finalizers().clear();
-    SessionLocal::get_thread_finalizers().clear();
     // Something that needs NOT to be initialized
     int session_no = 0;
 
@@ -68,9 +67,6 @@ TEST_F(TestSessionLocal, Register) {
 }
 
 TEST_F(TestSessionLocal, MultiSessions) {
-    SessionLocal::get_initializers().clear();
-    SessionLocal::get_finalizers().clear();
-    SessionLocal::get_thread_finalizers().clear();
     // Something that needs NOT to be initialized
     int session_no = 0;
 
@@ -136,10 +132,6 @@ TEST_F(TestSessionLocal, MultiSessions) {
 }
 
 TEST_F(TestSessionLocal, ThreadFinalizer) {
-    SessionLocal::get_initializers().clear();
-    SessionLocal::get_finalizers().clear();
-    SessionLocal::get_thread_finalizers().clear();
-
     bool* some_bool = nullptr;
     int* some_int = nullptr;
     EXPECT_EQ(SessionLocal::get_thread_finalizers().empty(), true);

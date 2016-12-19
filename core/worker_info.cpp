@@ -14,45 +14,33 @@
 
 #include "core/worker_info.hpp"
 
-#include <algorithm>
 #include <string>
 
 namespace husky {
 
-void WorkerInfo::add_worker(int process_id, int global_worker_id, int local_worker_id, int num_hash_ranges) {
-    // set global_to_proc_
-    ASSERT_MSG(global_to_proc_.find(global_worker_id) == global_to_proc_.end(),
-               "global_worker_id already exists in global_to_proc_");
-    global_to_proc_.insert({global_worker_id, process_id});
+void WorkerInfo::set_num_processes(int num_proc) { num_proc_ = num_proc; }
 
-    // set global_to_local_
-    ASSERT_MSG(global_to_local_.find(global_worker_id) == global_to_local_.end(),
-               "global_worker_id already exists in global_to_local_");
-    global_to_local_.insert({global_worker_id, local_worker_id});
+void WorkerInfo::set_num_workers(int num_workers) { num_workers_ = num_workers; }
 
-    // set local_to_global_
-    ASSERT_MSG(local_to_global_[process_id].find(local_worker_id) == local_to_global_[process_id].end(),
-               "{process_id, local_worker_id} already exists in local_to_global_");
-    local_to_global_[process_id].insert({local_worker_id, global_worker_id});
+void WorkerInfo::set_proc_id(int proc_id) { proc_id_ = proc_id; }
 
-    // set hash_ring_
-    hash_ring_.insert(global_worker_id);
+void WorkerInfo::add_worker(int proc_id, int global_worker_id, int local_worker_id) {
+    if (global_to_proc_.size() <= global_worker_id)
+        global_to_proc_.resize(global_worker_id + 1);
+    global_to_proc_[global_worker_id] = proc_id;
 
-    // set processes and workers
-    if (processes_.find(process_id) == processes_.end())
-        processes_.insert(process_id);
-    if (workers_.find(global_worker_id) == workers_.end())
-        workers_.insert(global_worker_id);
+    if (local_to_global_.size() <= proc_id)
+        local_to_global_.resize(proc_id + 1);
 
-    // set largest_tid
-    if (global_worker_id > largest_tid_)
-        largest_tid_ = global_worker_id;
+    if (local_to_global_[proc_id].size() <= local_worker_id)
+        local_to_global_[proc_id].resize(local_worker_id + 1);
+    local_to_global_[proc_id][local_worker_id] = global_worker_id;
 }
 
-void WorkerInfo::set_hostname(int process_id, const std::string& hostname) {
-    if (hostname_.size() <= process_id)
-        hostname_.resize(process_id + 1);
-    hostname_[process_id] = hostname;
+void WorkerInfo::add_proc(int proc_id, const std::string& hostname) {
+    if (host_.size() <= proc_id)
+        host_.resize(proc_id + 1);
+    host_[proc_id] = hostname;
 }
 
 }  // namespace husky
