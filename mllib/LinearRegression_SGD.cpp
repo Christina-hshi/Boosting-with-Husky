@@ -48,19 +48,12 @@ namespace husky{
                         double error = x_with_const_term * para_old - instances.get_y(instance); // not include regularization term.
                         global_squared_error.update(error * error);
 
-                        para_update -= eta * (error * x_with_const_term + alpha * para_old);
+                        para_update -= 2 * eta * (error * x_with_const_term + alpha * para_old);
                         }
                     );
 
                 //to do the division only once.
                 para_update /= instances.numInstances;
-                
-                //add regualarization
-                double tmp = para_old.back();
-                para_old.back() = 0;
-                para_update -= eta * alpha * para_old;
-                para_old.back() = tmp;
-
                 para_vec.update(para_update);
 
                 double weighted_squared_error = global_squared_error.get_value() / instances.numInstances;
@@ -138,15 +131,10 @@ namespace husky{
                         double weight = weight_attrList.get(instance);
                         double error = x_with_const_term * para_old - instances.get_y(instance); // not include regularization term.
                         global_squared_error.update(weight * error * error);
-
-                        para_vec.update( -1 * weight * eta * (error * x_with_const_term));
+                        
+                        para_vec.update( -2 * weight * eta * (error * x_with_const_term + alpha * para_old));
                     }
                 );
-                //add regularization; w0 is not penalized.
-                double m0 = para_old.back();
-                para_old.back() = 0;
-                para_vec.update(-eta * alpha * para_old);
-                para_old.back() = m0;
                 
                 double weighted_squared_error = global_squared_error.get_value();
                 if(old_weighted_squared_error < weighted_squared_error){
@@ -160,15 +148,15 @@ namespace husky{
                     trival_improve_iter = 0;
                 }
 
-                husky::lib::AggregatorFactory::sync();
 
                 //output the training infor.
                 if (husky::Context::get_global_tid() == 0) {
-                    husky::base::log_msg("Iter#" + std::to_string(iter) + "\tGlobal weighted squared error: " + std::to_string(weighted_squared_error));
+                    husky::base::log_msg("Iter#" + std::to_string(iter) + "\tGlobal weighted squared error: " + std::to_string(global_squared_error.get_value()));
                     husky::base::log_msg("\tparameters: " + vec_to_str(para_vec.get_value()));
                 }
 
                 old_weighted_squared_error = weighted_squared_error;
+                husky::lib::AggregatorFactory::sync();
             }
 
             this->param_vec = para_vec.get_value(); 

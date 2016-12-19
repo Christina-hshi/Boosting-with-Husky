@@ -9,8 +9,7 @@ vector operation::
 
 matrix operation::
 += inplace matrix addition
-/= usage: matrix /= cons
-*= usage: matrix *= cons
+
 */
 #pragma once
 
@@ -20,7 +19,6 @@ matrix operation::
 #include <ctime>
 #include <cmath>
 #include <cstdlib>
-#include <sstream>
 
 #include <boost/numeric/ublas/vector.hpp>
 #include <boost/numeric/ublas/vector_proxy.hpp>
@@ -30,9 +28,9 @@ matrix operation::
 #include <boost/numeric/ublas/io.hpp>
 typedef std::vector<double> vec_double;
 typedef std::vector<std::vector<double>> matrix;
-typedef std::vector<std::vector<double>> matrix_double;
 
-inline std::string vec_to_str(const vec_double& v) {
+
+inline std::string vec_to_str(vec_double v) {
     std::string str("");
     for (auto& x : v) {
         str += std::to_string(x);
@@ -41,71 +39,6 @@ inline std::string vec_to_str(const vec_double& v) {
     return str;
 }
 
-inline std::string matrix_to_str(matrix_double& m){
-    std::stringstream ss;
-    ss.precision(2);
-    for(auto& row : m){
-        for(auto& ele : row){
-            ss<< ele <<" ";
-        }
-        ss << "\n";
-    }
-    return ss.str();
-}
-
-inline matrix_double& operator+= (matrix_double& m1, const matrix_double& m2){
-    //for debug 
-    if(m1.size() != m2.size()){
-        std::cout<<"different size!"<<std::endl;
-        std::cout<<"m1 "<<m1.size()<<" ";
-        for(size_t x = 0; x < m1.size(); x++){
-            std::cout<<m1[x].size()<<" ";
-        }
-        std::cout<<std::endl<<"m2 "<<m2.size()<<" ";
-        for(size_t x = 0; x < m2.size(); x++){
-            std::cout<<m2[x].size()<<" ";
-        }
-        std::cout<<std::endl;
-    }
-    //end
-    
-    for(size_t r = 0; r < m1.size(); r++){
-        for(size_t c = 0; c < m1[r].size(); c++){
-            m1[r][c] += m2[r][c];
-        }
-    }
-    return m1;
-}
-
-inline matrix_double& operator/= (matrix_double& m, const double coe){
-    for(size_t r = 0; r < m.size(); r++){
-        for(size_t c = 0; c < m[r].size(); c++){
-            m[r][c] /= coe;
-        }
-    }
-    return m;
-}
-inline matrix_double& operator*= (matrix_double& m, const double coe){
-    for(size_t r = 0; r < m.size(); r++){
-        for(size_t c = 0; c < m[r].size(); c++){
-            m[r][c] *= coe;
-        }
-    }
-    return m;
-}
-
-inline matrix_double operator*(const matrix_double& m, const double coe){
-    matrix_double result;
-    for(size_t r = 0; r < m.size(); r++){
-        result.push_back(vec_double(m[r].size(), 0));
-        for(size_t c = 0; c < m[r].size(); c++){
-            result[r][c] = m[r][c] * coe;
-        }
-    }
-    return result;
-}
-
-/*
 inline matrix& operator+= (matrix& ma, const matrix& mb) {
 
     int m = ma.size();
@@ -115,8 +48,6 @@ inline matrix& operator+= (matrix& ma, const matrix& mb) {
         ma[i][j] += mb[i][j];
     return ma;
 }
-*/
-
 // Inner Product : tolerance the case where length(va) <= length(vb)
 inline double operator* (const vec_double& va, const vec_double& vb) {
     int n = va.size();
