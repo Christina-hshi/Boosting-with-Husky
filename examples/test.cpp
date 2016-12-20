@@ -66,7 +66,7 @@ void LogisticRegression_test(){
 
     list_execute(instances.enumerator(), {}, {&ac},
             [&](Instance& instance){
-                if(prediction.get(instance) != instances.get_class(instance)){
+                if(prediction.get(instance).label != instances.get_class(instance)){
                     c_error.update(1);
                 }
             }

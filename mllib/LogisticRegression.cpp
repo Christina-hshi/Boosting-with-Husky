@@ -505,44 +505,43 @@ namespace husky{
         }
 
         /*
-         * Only ouput the predicted label
-        */
-        AttrList<Instance, double>&  LogisticRegression::predict(Instances& instances,std::string prediction_name){
-            if(this->mode == MODE::LOCAL){
-                throw std::invalid_argument("Prediciton is not provided after training in LOCAL mode!");
-            }
+         * predict #prediciton contains label and class_proba in it.
+         */
+        AttrList<Instance, Prediction>&  LogisticRegression::predict(Instances& instances,std::string prediction_name){
+          if(this->mode == MODE::LOCAL){
+            throw std::invalid_argument("Prediciton is not provided after training in LOCAL mode!");
+          }
 
-            AttrList<Instance, double>&  prediction= instances.createAttrlist<double>(prediction_name);
-            list_execute(instances.enumerator(), [&prediction, this](Instance& instance) {
-                    vec_double feature_vector=instance.X;
-                    feature_vector.push_back(1);
-                    
-                    //calculate probability
-                    vec_double class_prob_tmp(class_num, 0.0);
-                    double sum_tmp = 0;
-                    for(int x = 0; x < class_num-1; x++ ){
-                        class_prob_tmp[x] = exp(feature_vector * param_matrix[x]);
-                        sum_tmp += class_prob_tmp[x];
-                    }
-                    sum_tmp += 1;
-                    class_prob_tmp.back() = 1;
-                    class_prob_tmp /= sum_tmp;
+          AttrList<Instance, Prediction>&  prediction= instances.createAttrlist<Prediction>(prediction_name);
+          list_execute(instances.enumerator(), [&prediction, this](Instance& instance) {
+              vec_double feature_vector=instance.X;
+              feature_vector.push_back(1);
 
-                    //choose label with highest probability
-                    double max_p = 0;
-                    int label;
-                    for(int x = 0; x < class_num; x++){
-                        if(class_prob_tmp[x] > max_p){
-                            max_p = class_prob_tmp[x];
-                            label = x;
-                        }
-                    }
+              //calculate probability
+              vec_double class_prob_tmp(class_num, 0.0);
+              double sum_tmp = 0;
+              for(int x = 0; x < class_num-1; x++ ){
+                class_prob_tmp[x] = exp(feature_vector * param_matrix[x]);
+                sum_tmp += class_prob_tmp[x];
+              }
+              sum_tmp += 1;
+              class_prob_tmp.back() = 1;
+              class_prob_tmp /= sum_tmp;
 
-                    prediction.set(instance, (double)label);
-                    });
-            return prediction;
+              //choose label with highest probability
+              double max_p = 0;
+              int label;
+              for(int x = 0; x < class_num; x++){
+                if(class_prob_tmp[x] > max_p){
+                  max_p = class_prob_tmp[x];
+                  label = x;
+                }
+              }
+
+              prediction.set(instance, Prediction(label, class_prob_tmp));
+          });
+          return prediction;
         }
-
 
     }
 }

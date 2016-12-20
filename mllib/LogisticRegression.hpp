@@ -6,8 +6,8 @@
 #include <limits>
 #include "mllib/Utility.hpp"
 #include "mllib/Instances.hpp"
-#include "mllib/Estimator.hpp"
 #include "lib/aggregator_factory.hpp"
+#include "mllib/Classifier.hpp"
 
 namespace husky{
     namespace mllib{
@@ -19,7 +19,7 @@ namespace husky{
          */
         enum class MODE {GLOBAL=0, LOCAL=1};
         
-        class LogisticRegression : public Estimator{
+        class LogisticRegression : public Classifier{
 
             private:
                 matrix_double param_matrix;//parameter matrix
@@ -75,9 +75,9 @@ namespace husky{
                 */
                 void fit(const Instances& instances, std::string instance_weight_name);
                 
-                AttrList<Instance, double>&  predict(Instances& instances,std::string prediction_name="prediction");
-
-                Estimator* clone(int seed=0){
+                AttrList<Instance, Prediction>&  predict(Instances& instances,std::string prediction_name="prediction");
+               
+                Classifier* clone(int seed=0){
                     return new LogisticRegression(this->max_iter, this->eta0, this->alpha, this->trival_improve_th, this->max_trival_improve_iter, this->mode, this->class_num);
 
                 }
