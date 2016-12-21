@@ -6,10 +6,12 @@
 #include "mllib/MaxAbsScaler.hpp"
 #include "mllib/LinearRegression_SGD.hpp"
 #include "mllib/LogisticRegression.hpp"
+#include "mllib/RealAdaBoost.hpp"
 
 void MaxAbsScaer_test();
 void LinearRegression_SGD_test();
 void LogisticRegression_test();
+void RealAdaBoost_test();
 
 int main(int argc, char** argv) {
     std::vector<std::string> args;
@@ -17,16 +19,67 @@ int main(int argc, char** argv) {
     args.push_back("hdfs_namenode_port");
     args.push_back("input");
     if (husky::init_with_args(argc, argv,args)) {
-        husky::run_job(LogisticRegression_test);
+        husky::run_job(RealAdaBoost_test);
+        //husky::run_job(LogisticRegression_test);
         //husky::run_job(LinearRegression_SGD_test);
         return 0;
     }
     return 1;
 }
 
-void test(){
-    matrix_double m1;
+void RealAdaBoost_test(){
+  using namespace husky::mllib;
+  using namespace std;
+
+  Instances instances;
+  svReader(instances, husky::Context::get_param("input"), boost::char_separator<char>(","), LABEL_TYPE::CLASS);
+
+  MaxAbsScaler scaler;
+  scaler.fit_transform(instances);
+
+    /*
+    auto& weight_attrList = instances.createAttrlist<double>("weight");
+    double num_intances = instances.numInstances;
+    list_execute(instances.enumerator(), {}, {}, [&](Instance& instance){
+        weight_attrList.set(instance, (double)1/num_intances);
+    });
+    */
+
+    /*
+     * Parameters specification
+     *  max_iter
+     *  eta0: initial leaarning rate
+     *  
+     */
+    LogisticRegression* log_r = new LogisticRegression(50000, 1, 0.001, 0.00001, 100, MODE::GLOBAL, instances.numClasses);
+    
+    RealAdaBoost real_ada_boost(log_r, 10);
+
+    real_ada_boost.fit(instances);
+    auto& prediction = real_ada_boost.predict(instances, "prediction");
+
+    //calculate classification error
+    husky::lib::Aggregator<long int> c_error(0, [](long int& a, const long int b){a += b;},
+            [](long int& v){v = 0;});
+
+    auto& ac = husky::lib::AggregatorFactory::get_channel();
+
+    list_execute(instances.enumerator(), {}, {&ac},
+            [&](Instance& instance){
+                if(prediction.get(instance).label != instances.get_class(instance)){
+                    c_error.update(1);
+                }
+            }
+        );
+
+    if(husky::Context::get_global_tid() == 0){
+        husky::base::log_msg("Misclassified " + std::to_string(c_error.get_value()) + " out of " + std::to_string(instances.numInstances));
+    }
+    //scaler.inverse_transfrom(instances);
+    delete log_r;
+    return;
 }
+
 
 void LogisticRegression_test(){
     using namespace husky::mllib;
@@ -56,7 +109,7 @@ void LogisticRegression_test(){
     
     log_r.fit(instances);
 
-    auto& prediction = log_r.predict(instances);
+    auto& prediction = log_r.predict(instances, "prediction");
 
     //calculate classification error
     husky::lib::Aggregator<long int> c_error(0, [](long int& a, const long int b){a += b;},
@@ -73,6 +126,8 @@ void LogisticRegression_test(){
         );
 
     if(husky::Context::get_global_tid() == 0){
+      husky::base::log_msg(instances.enumerator().has_attrlist("prediction")?"prediction exits":"prediction doesn't exist");
+      
         husky::base::log_msg("Misclassified " + std::to_string(c_error.get_value()) + " out of " + std::to_string(instances.numInstances));
     }
     //scaler.inverse_transfrom(instances);

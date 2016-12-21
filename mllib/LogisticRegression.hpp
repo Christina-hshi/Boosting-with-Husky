@@ -75,7 +75,7 @@ namespace husky{
                 */
                 void fit(const Instances& instances, std::string instance_weight_name);
                 
-                AttrList<Instance, Prediction>&  predict(Instances& instances,std::string prediction_name="prediction");
+                AttrList<Instance, Prediction>&  predict(const Instances& instances,std::string prediction_name="prediction");
                
                 Classifier* clone(int seed=0){
                     return new LogisticRegression(this->max_iter, this->eta0, this->alpha, this->trival_improve_th, this->max_trival_improve_iter, this->mode, this->class_num);

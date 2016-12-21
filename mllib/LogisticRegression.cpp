@@ -507,12 +507,13 @@ namespace husky{
         /*
          * predict #prediciton contains label and class_proba in it.
          */
-        AttrList<Instance, Prediction>&  LogisticRegression::predict(Instances& instances,std::string prediction_name){
+        AttrList<Instance, Prediction>&  LogisticRegression::predict(const Instances& instances,std::string prediction_name){
           if(this->mode == MODE::LOCAL){
             throw std::invalid_argument("Prediciton is not provided after training in LOCAL mode!");
           }
 
-          AttrList<Instance, Prediction>&  prediction= instances.createAttrlist<Prediction>(prediction_name);
+          AttrList<Instance, Prediction>&  prediction = instances.enumerator().has_attrlist(prediction_name)? instances.getAttrlist<Prediction>(prediction_name) : instances.createAttrlist<Prediction>(prediction_name);
+
           list_execute(instances.enumerator(), [&prediction, this](Instance& instance) {
               vec_double feature_vector=instance.X;
               feature_vector.push_back(1);

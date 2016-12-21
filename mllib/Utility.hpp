@@ -21,6 +21,7 @@ matrix operation::
 #include <cmath>
 #include <cstdlib>
 #include <sstream>
+#include <limits>
 
 #include <boost/numeric/ublas/vector.hpp>
 #include <boost/numeric/ublas/vector_proxy.hpp>
@@ -117,6 +118,13 @@ inline matrix& operator+= (matrix& ma, const matrix& mb) {
 }
 */
 
+inline double sum(const vec_double& v){
+  double result = 0;
+  for(auto ele : v){
+    result += ele;
+  }
+  return result;
+}
 // Inner Product : tolerance the case where length(va) <= length(vb)
 inline double operator* (const vec_double& va, const vec_double& vb) {
     int n = va.size();
