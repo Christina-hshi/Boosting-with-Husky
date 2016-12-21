@@ -225,6 +225,23 @@ class ObjList : public ObjListBase {
         return attrlist_map.erase(attr_name);
     }
 
+    // has AttrList?
+    bool has_attrlist(const std::string& attr_name) {
+        if (attrlist_map.find(attr_name) != attrlist_map.end()) {
+            return true;
+        }
+        return false;
+    }
+   
+    // get all AttrList name
+    std::vector<std::string> get_attrlist_name(){
+      std::vector<std::string> result; 
+      for(auto& ele : attrlist_map){
+        result.push_back(ele.first);
+      }
+      return result;
+    }
+
     void migrate_attribute(BinStream& bin, const size_t idx) {
         if (!this->attrlist_map.empty()) {
             for (auto& item : this->attrlist_map) {
