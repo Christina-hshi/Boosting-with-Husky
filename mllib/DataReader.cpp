@@ -37,8 +37,10 @@ namespace husky{
                 husky::base::log_msg("Start loading data from " + filepath);
             }
             husky::load(infmt, {&ac},parser);
-            //husky::base::log_msg("finished loading "+filepath);
+
+
             instances.globalize();
+            husky::base::log_msg("finished loading "+filepath);
             //husky::base::log_msg("finished globalizing instances");
             //create corresponding label
             //husky::base::log_msg("start constructing y and class column");

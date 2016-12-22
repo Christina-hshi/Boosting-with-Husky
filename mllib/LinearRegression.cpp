@@ -65,7 +65,7 @@ void LinearRegression::fit(const mllib::Instances& original_instances){
 
 }
 
-AttrList<Instance, double>&  LinearRegression::predict(mllib::Instances& instances,std::string prediction_name){
+AttrList<Instance, double>&  LinearRegression::predict(const mllib::Instances& instances,std::string prediction_name){
   AttrList<Instance, double>&  prediction= instances.createAttrlist<double>(prediction_name);
   list_execute(instances.enumerator(), [&prediction,this](Instance& instance) {
     vec_double feature_vector=instance.X;

@@ -23,7 +23,7 @@ public:
   SimpleLinearRegression() {selected_attribute=-1;}
   void fit(const mllib::Instances& original_instances);
   void fit(const mllib::Instances& original_instances,std::string weight_name);
-  AttrList<Instance, double>&  predict(mllib::Instances& instances,std::string prediction_name="prediction");
+  AttrList<Instance, double>&  predict(const mllib::Instances& instances,std::string prediction_name="prediction");
   Estimator* clone(int seed=0){
     return new SimpleLinearRegression();
 

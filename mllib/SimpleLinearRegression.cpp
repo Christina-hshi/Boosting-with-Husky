@@ -223,7 +223,7 @@ void SimpleLinearRegression::fit(const mllib::Instances& instances,std::string w
 
 
 }
-AttrList<Instance, double>&  SimpleLinearRegression::predict(mllib::Instances& instances,std::string prediction_name){
+AttrList<Instance, double>&  SimpleLinearRegression::predict(const mllib::Instances& instances,std::string prediction_name){
   AttrList<Instance, double>&  prediction= instances.createAttrlist<double>(prediction_name);
   list_execute(instances.enumerator(), [&prediction,this](Instance& instance) {
     vec_double feature_vector=instance.X;

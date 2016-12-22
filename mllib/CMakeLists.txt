@@ -28,6 +28,7 @@ add_library(mllib-objs OBJECT
 	SimpleLinearRegression.cpp
 	LogisticRegression.cpp
 	RealAdaBoost.cpp
+	LogitBoost.cpp
 	)
 set_property(TARGET mllib-objs PROPERTY CXX_STANDARD 14)
 

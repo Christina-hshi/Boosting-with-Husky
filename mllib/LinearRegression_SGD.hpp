@@ -56,7 +56,7 @@ namespace husky{
                 */
                 void fit(const Instances& original_instances, std::string instance_weight_name);
 
-                AttrList<Instance, double>&  predict(Instances& instances,std::string prediction_name="prediction");
+                AttrList<Instance, double>&  predict(const Instances& instances,std::string prediction_name="prediction");
 
                 Estimator* clone(int seed=0){
                     return new LinearRegression_SGD(this->max_iter, this->eta0, this->alpha, this->trival_improve_th, this->max_trival_improve_iter);

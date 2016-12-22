@@ -10,7 +10,16 @@ namespace husky{
           
           Prediction(){};
           explicit Prediction(int l, vec_double p): label(l), proba(p){}
-          
+          Prediction& operator=(const Prediction& p){
+     		 if (this == &p)
+          		return *this;
+      // do the copy
+      		label=p.label;
+      		proba=p.proba;
+
+      // return the existing object so we can chain this operator
+      		return *this;
+    		} 
           friend husky::BinStream& operator<<(husky::BinStream& stream, const Prediction& p){
             stream << p.label << p.proba;
           }

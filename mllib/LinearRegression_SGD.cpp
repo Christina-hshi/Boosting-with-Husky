@@ -181,7 +181,7 @@ namespace husky{
 
         }
 
-        AttrList<Instance, double>&  LinearRegression_SGD::predict(Instances& instances,std::string prediction_name){
+        AttrList<Instance, double>&  LinearRegression_SGD::predict(const Instances& instances,std::string prediction_name){
 
             AttrList<Instance, double>&  prediction= instances.createAttrlist<double>(prediction_name);
             list_execute(instances.enumerator(), [&prediction, this](Instance& instance) {
