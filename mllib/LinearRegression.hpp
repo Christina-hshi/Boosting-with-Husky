@@ -35,15 +35,18 @@ private:
   vec_double param_vec;
 
 public:
+  LinearRegression(){}
   void fit(const mllib::Instances& original_instances);
+  void fit(const Instances& instances,std::string instance_weight_name);
   AttrList<Instance, double>&  predict(const mllib::Instances& instances,std::string prediction_name="prediction");
+
   Estimator* clone(int seed=0){
     return new LinearRegression();
 
-  };
+  }
   vec_double get_parameters(){
     return param_vec;
-  };
+  }
 
 };
 }
