@@ -15,10 +15,6 @@
 
 include_directories(${PROJECT_SOURCE_DIR} ${Boost_INCLUDE_DIRS})
 
-add_library(test-objs OBJECT
-    testcompile.cpp)
-set_property(TARGET test-objs PROPERTY CXX_STANDARD 14)
-
 # add cpp files in mllib directory in 'mllib-objs'
 add_library(mllib-objs OBJECT
 	DataReader.cpp
