@@ -84,11 +84,6 @@ set(husky husky-mllib husky-lib husky-io husky-core husky-base)
 #target_link_libraries(PR_CC ${EXTERNAL_LIB})
 #set_property(TARGET PR_CC PROPERTY CXX_STANDARD 14)
 #
-## TESTC
-add_executable(TESTC testcompiling.cpp)
-target_link_libraries(TESTC ${husky})
-target_link_libraries(TESTC ${EXTERNAL_LIB})
-set_property(TARGET TESTC PROPERTY CXX_STANDARD 14)
 
 add_executable(TESTS test_SLR.cpp)
 target_link_libraries(TESTS ${husky})
